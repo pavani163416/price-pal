@@ -8,15 +8,15 @@ const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
 const PRODUCT_SCHEMA = {
   type: 'object',
   properties: {
-    name: { type: 'string' },
-    price: { type: 'number' },
-    original_price: { type: 'number' },
-    rating: { type: 'number' },
-    reviews_count: { type: 'number' },
-    image_url: { type: 'string' },
-    availability: { type: 'string' },
+    name: { type: 'string', description: 'Full product title/name exactly as shown on the page' },
+    price: { type: 'number', description: 'Current selling price in INR as a plain number without currency symbol, commas, or decimals. This is the final price the customer pays.' },
+    original_price: { type: 'number', description: 'MRP or original price before discount in INR as a plain number. Only if a strikethrough/crossed-out price is shown.' },
+    rating: { type: 'number', description: 'Product rating out of 5 (e.g. 4.2)' },
+    reviews_count: { type: 'number', description: 'Total number of ratings or reviews as a number' },
+    image_url: { type: 'string', description: 'URL of the main product image (the largest/primary product photo)' },
+    availability: { type: 'string', description: 'Stock status like "In Stock" or "Out of Stock"' },
   },
-  required: ['name'],
+  required: ['name', 'price'],
 };
 
 const STORE_CONFIGS = [
@@ -239,17 +239,23 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
   try {
     console.log(`Scraping ${store.store} product page:`, url);
 
+    const storeHints: Record<string, string> = {
+      amazon: 'Look for the price inside the "a-price-whole" or "priceBlockBuyingPriceString" element. The MRP/original price is usually shown with a strikethrough. The product title is in the "productTitle" span.',
+      flipkart: 'Look for the selling price (usually the larger bold price). The original price has a strikethrough. Product title is the main heading.',
+      croma: 'Look for the current selling price and any old/MRP price shown with strikethrough.',
+    };
+
     const data = await firecrawlRequest<any>(
       'scrape',
       {
         url,
         formats: [{
           type: 'json',
-          prompt: `Extract product details from this ${store.store} product page. Return JSON with: name (full product title), price (number only, no currency symbol or commas), original_price (number if available), rating (number like 4.2), reviews_count (number), image_url (main product image URL), availability (simple stock status string).`,
+          prompt: `Extract the exact product details from this ${store.store} product page. ${storeHints[store.key] || ''} IMPORTANT: Return the EXACT current selling price as shown on the page - the price the customer would actually pay right now. Do NOT guess or estimate prices. Return price as a plain number without currency symbols or commas (e.g. 28990 not ₹28,990). For image_url, return the main product image URL.`,
           schema: PRODUCT_SCHEMA,
         }],
         onlyMainContent: true,
-        waitFor: 3000,
+        waitFor: 5000,
       },
       apiKey,
     );
