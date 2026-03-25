@@ -3,6 +3,66 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
+
+const PRODUCT_SCHEMA = {
+  type: 'object',
+  properties: {
+    name: { type: 'string' },
+    price: { type: 'number' },
+    original_price: { type: 'number' },
+    rating: { type: 'number' },
+    reviews_count: { type: 'number' },
+    image_url: { type: 'string' },
+    availability: { type: 'string' },
+  },
+  required: ['name'],
+};
+
+const STORE_CONFIGS = [
+  {
+    key: 'amazon',
+    domain: 'amazon.in',
+    store: 'Amazon',
+    store_logo: 'https://logo.clearbit.com/amazon.in',
+  },
+  {
+    key: 'flipkart',
+    domain: 'flipkart.com',
+    store: 'Flipkart',
+    store_logo: 'https://logo.clearbit.com/flipkart.com',
+  },
+  {
+    key: 'croma',
+    domain: 'croma.com',
+    store: 'Croma',
+    store_logo: 'https://logo.clearbit.com/croma.com',
+  },
+] as const;
+
+type StoreConfig = typeof STORE_CONFIGS[number];
+
+interface FirecrawlSearchResult {
+  url?: string;
+  title?: string;
+  description?: string;
+}
+
+interface ScrapedProductData {
+  name?: string;
+  price?: number;
+  original_price?: number;
+  rating?: number;
+  reviews_count?: number;
+  image_url?: string;
+  availability?: string;
+}
+
+interface ScrapeResult {
+  product: Product | null;
+  rawName: string;
+}
+
 interface Product {
   id: string;
   name: string;
@@ -19,265 +79,243 @@ interface Product {
   is_best_price: boolean;
 }
 
-// Extract product title from a URL page using Firecrawl
-async function extractTitleFromUrl(url: string, apiKey: string): Promise<string> {
+function normalizeInputQuery(value: string): string {
+  const trimmed = value.trim();
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[\w.-]+\.[a-z]{2,}\/.*$/i.test(trimmed)) return `https://${trimmed}`;
+  return trimmed;
+}
+
+function isLikelyUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function getStoreByUrl(url: string): StoreConfig | undefined {
   try {
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
+    const hostname = new URL(url).hostname.replace(/^www\./, '');
+    return STORE_CONFIGS.find((store) => hostname.endsWith(store.domain));
+  } catch {
+    return undefined;
+  }
+}
+
+function cleanProductName(name: string): string {
+  return name
+    .replace(/\s+:\s+Amazon\.in.*$/i, '')
+    .replace(/\s+-\s+Amazon\.in.*$/i, '')
+    .replace(/\s+-\s+Flipkart.*$/i, '')
+    .replace(/\s+\|\s+Croma.*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeNameForMatching(value: string): string {
+  return cleanProductName(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\b(amazon|flipkart|croma|buy|online|india|with|and|for|the|fully|automatic)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function calculateMatchScore(reference: string, candidate: string): number {
+  const referenceTokens = new Set(normalizeNameForMatching(reference).split(' ').filter((token) => token.length > 1));
+  const candidateTokens = new Set(normalizeNameForMatching(candidate).split(' ').filter((token) => token.length > 1));
+
+  if (referenceTokens.size === 0 || candidateTokens.size === 0) {
+    return 0;
+  }
+
+  let matches = 0;
+  for (const token of referenceTokens) {
+    if (candidateTokens.has(token)) matches += 1;
+  }
+
+  return matches / Math.max(referenceTokens.size, 1);
+}
+
+function isLikelyProductUrl(store: StoreConfig, url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    const pathname = parsed.pathname.toLowerCase();
+
+    if (!parsed.hostname.replace(/^www\./, '').endsWith(store.domain)) return false;
+
+    if (store.key === 'amazon') return pathname.includes('/dp/');
+    if (store.key === 'flipkart') return pathname.includes('/p/');
+    if (store.key === 'croma') return !pathname.includes('/search');
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string): Promise<T> {
+  const response = await fetch(`${FIRECRAWL_BASE_URL}/${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const responseText = await response.text();
+  const data = responseText ? JSON.parse(responseText) : {};
+
+  if (!response.ok) {
+    throw new Error(`Firecrawl ${path} failed [${response.status}]: ${responseText.slice(0, 500)}`);
+  }
+
+  return data as T;
+}
+
+async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string): Promise<ScrapeResult> {
+  try {
+    console.log(`Scraping ${store.store} product page:`, url);
+
+    const data = await firecrawlRequest<any>(
+      'scrape',
+      {
         url,
-        formats: [{ type: 'json', prompt: 'Extract the product name/title from this page. Return just the product name as a simple string.' }],
+        formats: [{
+          type: 'json',
+          prompt: `Extract product details from this ${store.store} product page. Return JSON with: name (full product title), price (number only, no currency symbol or commas), original_price (number if available), rating (number like 4.2), reviews_count (number), image_url (main product image URL), availability (simple stock status string).`,
+          schema: PRODUCT_SCHEMA,
+        }],
         onlyMainContent: true,
-      }),
-    });
-    const data = await response.json();
-    const title = data?.data?.json?.product_name || data?.data?.json?.title || data?.data?.json?.name || data?.data?.metadata?.title || '';
-    if (title) return title.replace(/ - Amazon\.in.*$/, '').replace(/ - Flipkart\.com.*$/, '').trim();
-  } catch (e) {
-    console.error('Title extraction error:', e);
-  }
-  return '';
-}
-
-// Scrape Amazon search results using Firecrawl JSON extraction
-async function scrapeAmazon(query: string, apiKey: string): Promise<Product[]> {
-  try {
-    const searchUrl = `https://www.amazon.in/s?k=${encodeURIComponent(query)}`;
-    console.log('Scraping Amazon:', searchUrl);
-
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: [{
-          type: 'json',
-          prompt: `Extract the first 3 product results from this Amazon search page. For each product return: name (full product title), price (number only, no currency symbol, no commas), original_price (MRP/strikethrough price as number if available), rating (number like 4.2), reviews_count (number), product_url (the relative href path starting with /), image_url (the product image src). Return as an array of objects.`,
-          schema: {
-            type: 'object',
-            properties: {
-              products: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    price: { type: 'number' },
-                    original_price: { type: 'number' },
-                    rating: { type: 'number' },
-                    reviews_count: { type: 'number' },
-                    product_url: { type: 'string' },
-                    image_url: { type: 'string' },
-                  },
-                  required: ['name', 'price'],
-                },
-              },
-            },
-            required: ['products'],
-          },
-        }],
         waitFor: 3000,
-      }),
-    });
+      },
+      apiKey,
+    );
 
-    const data = await response.json();
-    console.log('Amazon response status:', response.status);
+    const metadata = data?.data?.metadata || data?.metadata || {};
+    const extracted: ScrapedProductData = data?.data?.json || data?.json || {};
+    const rawName = cleanProductName(extracted.name || metadata.title || '');
 
-    const products = data?.data?.json?.products || [];
-    return products.slice(0, 3).map((p: any, i: number) => {
-      let productUrl = p.product_url || '';
-      if (productUrl && !productUrl.startsWith('http')) {
-        productUrl = `https://www.amazon.in${productUrl}`;
-      }
-      if (!productUrl) {
-        productUrl = searchUrl;
-      }
+    if (!rawName) {
+      return { product: null, rawName: '' };
+    }
 
-      return {
-        id: `amz_${i}`,
-        name: p.name || query,
-        price: p.price || 0,
-        original_price: p.original_price || undefined,
-        store: 'Amazon',
-        store_logo: 'https://logo.clearbit.com/amazon.in',
-        rating: p.rating || 0,
-        reviews: p.reviews_count || 0,
-        url: productUrl,
-        image: p.image_url || '',
-        availability: 'In Stock',
-        brand: (p.name || '').split(' ')[0],
+    const price = Number(extracted.price || 0);
+    if (!Number.isFinite(price) || price <= 0) {
+      return { product: null, rawName };
+    }
+
+    return {
+      rawName,
+      product: {
+        id: `${store.key}_${crypto.randomUUID()}`,
+        name: rawName,
+        price,
+        original_price: extracted.original_price && extracted.original_price > price ? extracted.original_price : undefined,
+        store: store.store,
+        store_logo: store.store_logo,
+        rating: Number(extracted.rating || 0),
+        reviews: Number(extracted.reviews_count || 0),
+        url: metadata?.sourceURL || metadata?.url || url,
+        image: extracted.image_url || '',
+        availability: extracted.availability || 'In Stock',
+        brand: rawName.split(' ')[0] || store.store,
         is_best_price: false,
-      };
-    });
-  } catch (e) {
-    console.error('Amazon scrape error:', e);
-    return [];
+      },
+    };
+  } catch (error) {
+    console.error(`${store.store} product page scrape error:`, error);
+    return { product: null, rawName: '' };
   }
 }
 
-// Scrape Flipkart search results using Firecrawl JSON extraction
-async function scrapeFlipkart(query: string, apiKey: string): Promise<Product[]> {
+async function searchStoreProducts(store: StoreConfig, referenceName: string, apiKey: string): Promise<Product | null> {
   try {
-    const searchUrl = `https://www.flipkart.com/search?q=${encodeURIComponent(query)}`;
-    console.log('Scraping Flipkart:', searchUrl);
-
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
+    const data = await firecrawlRequest<any>(
+      'search',
+      {
+        query: `site:${store.domain} ${referenceName}`,
+        limit: 5,
       },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: [{
-          type: 'json',
-          prompt: `Extract the first 3 product results from this Flipkart search page. For each product return: name (full product title), price (number only, no currency symbol, no commas), original_price (MRP/strikethrough price as number if available), rating (number like 4.2), reviews_count (number of ratings/reviews), product_url (the relative href path), image_url (the product image src). Return as an array of objects.`,
-          schema: {
-            type: 'object',
-            properties: {
-              products: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    price: { type: 'number' },
-                    original_price: { type: 'number' },
-                    rating: { type: 'number' },
-                    reviews_count: { type: 'number' },
-                    product_url: { type: 'string' },
-                    image_url: { type: 'string' },
-                  },
-                  required: ['name', 'price'],
-                },
-              },
-            },
-            required: ['products'],
-          },
-        }],
-        waitFor: 3000,
-      }),
-    });
+      apiKey,
+    );
 
-    const data = await response.json();
-    console.log('Flipkart response status:', response.status);
+    const results: FirecrawlSearchResult[] = data?.data?.web || data?.web || [];
+    const candidates = results.filter((result) => result.url && isLikelyProductUrl(store, result.url));
 
-    const products = data?.data?.json?.products || [];
-    return products.slice(0, 3).map((p: any, i: number) => {
-      let productUrl = p.product_url || '';
-      if (productUrl && !productUrl.startsWith('http')) {
-        productUrl = `https://www.flipkart.com${productUrl}`;
+    for (const candidate of candidates.slice(0, 3)) {
+      const previewText = [candidate.title, candidate.description].filter(Boolean).join(' ');
+      const previewScore = calculateMatchScore(referenceName, previewText);
+      if (previewScore < 0.2) continue;
+
+      const scraped = await scrapeProductPage(candidate.url!, store, apiKey);
+      if (!scraped.product) continue;
+
+      const matchScore = calculateMatchScore(referenceName, scraped.rawName);
+      console.log(`${store.store} match score:`, matchScore, scraped.rawName);
+      if (matchScore >= 0.35) {
+        return scraped.product;
       }
-      if (!productUrl) {
-        productUrl = searchUrl;
-      }
-
-      return {
-        id: `fk_${i}`,
-        name: p.name || query,
-        price: p.price || 0,
-        original_price: p.original_price || undefined,
-        store: 'Flipkart',
-        store_logo: 'https://logo.clearbit.com/flipkart.com',
-        rating: p.rating || 0,
-        reviews: p.reviews_count || 0,
-        url: productUrl,
-        image: p.image_url || '',
-        availability: 'In Stock',
-        brand: (p.name || '').split(' ')[0],
-        is_best_price: false,
-      };
-    });
-  } catch (e) {
-    console.error('Flipkart scrape error:', e);
-    return [];
+    }
+  } catch (error) {
+    console.error(`${store.store} search error:`, error);
   }
+
+  return null;
 }
 
-// Scrape Croma search results
-async function scrapeCroma(query: string, apiKey: string): Promise<Product[]> {
-  try {
-    const searchUrl = `https://www.croma.com/searchB?q=${encodeURIComponent(query)}&text=${encodeURIComponent(query)}`;
-    console.log('Scraping Croma:', searchUrl);
-
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: [{
-          type: 'json',
-          prompt: `Extract the first 3 product results from this Croma search page. For each product return: name (full product title), price (number only, no currency symbol, no commas), original_price (MRP as number if available), rating (number like 4.2), reviews_count (number), product_url (the product page href), image_url (the product image src). Return as an array of objects.`,
-          schema: {
-            type: 'object',
-            properties: {
-              products: {
-                type: 'array',
-                items: {
-                  type: 'object',
-                  properties: {
-                    name: { type: 'string' },
-                    price: { type: 'number' },
-                    original_price: { type: 'number' },
-                    rating: { type: 'number' },
-                    reviews_count: { type: 'number' },
-                    product_url: { type: 'string' },
-                    image_url: { type: 'string' },
-                  },
-                  required: ['name', 'price'],
-                },
-              },
-            },
-            required: ['products'],
-          },
-        }],
-        waitFor: 3000,
-      }),
-    });
-
-    const data = await response.json();
-    console.log('Croma response status:', response.status);
-
-    const products = data?.data?.json?.products || [];
-    return products.slice(0, 3).map((p: any, i: number) => {
-      let productUrl = p.product_url || '';
-      if (productUrl && !productUrl.startsWith('http')) {
-        productUrl = `https://www.croma.com${productUrl}`;
-      }
-      if (!productUrl) {
-        productUrl = searchUrl;
-      }
-
-      return {
-        id: `croma_${i}`,
-        name: p.name || query,
-        price: p.price || 0,
-        original_price: p.original_price || undefined,
-        store: 'Croma',
-        store_logo: 'https://logo.clearbit.com/croma.com',
-        rating: p.rating || 0,
-        reviews: p.reviews_count || 0,
-        url: productUrl,
-        image: p.image_url || '',
-        availability: 'In Stock',
-        brand: (p.name || '').split(' ')[0],
-        is_best_price: false,
-      };
-    });
-  } catch (e) {
-    console.error('Croma scrape error:', e);
-    return [];
+async function resolveProductForStore(
+  store: StoreConfig,
+  referenceName: string,
+  apiKey: string,
+  exactUrl?: string,
+): Promise<Product | null> {
+  if (exactUrl) {
+    const direct = await scrapeProductPage(exactUrl, store, apiKey);
+    if (direct.product) return direct.product;
   }
+
+  return await searchStoreProducts(store, referenceName, apiKey);
+}
+
+async function buildComparisonProducts(query: string, apiKey: string): Promise<Product[]> {
+  const normalizedQuery = normalizeInputQuery(query);
+  const queryIsUrl = isLikelyUrl(normalizedQuery);
+  const sourceStore = queryIsUrl ? getStoreByUrl(normalizedQuery) : undefined;
+
+  let referenceName = normalizedQuery;
+  let sourceProduct: Product | null = null;
+
+  if (queryIsUrl && sourceStore) {
+    console.log('Detected supported product URL, scraping source product...');
+    const sourceScrape = await scrapeProductPage(normalizedQuery, sourceStore, apiKey);
+    sourceProduct = sourceScrape.product;
+    if (sourceScrape.rawName) {
+      referenceName = sourceScrape.rawName;
+    }
+  }
+
+  console.log('Searching for reference product:', referenceName);
+
+  const products = await Promise.all(
+    STORE_CONFIGS.map((store) =>
+      resolveProductForStore(
+        store,
+        referenceName,
+        apiKey,
+        sourceStore?.key === store.key ? normalizedQuery : undefined,
+      )
+    )
+  );
+
+  const deduped = new Map<string, Product>();
+  for (const product of products) {
+    if (product) deduped.set(product.store, product);
+  }
+
+  if (sourceProduct && !deduped.has(sourceProduct.store)) {
+    deduped.set(sourceProduct.store, sourceProduct);
+  }
+
+  return Array.from(deduped.values());
 }
 
 Deno.serve(async (req) => {
@@ -303,48 +341,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    let searchQuery = query.trim();
+    let allProducts = await buildComparisonProducts(query, apiKey);
 
-    // If user pasted a URL, extract the product name first
-    if (searchQuery.startsWith('http')) {
-      console.log('Detected URL, extracting product title...');
-      const extractedTitle = await extractTitleFromUrl(searchQuery, apiKey);
-      if (extractedTitle) {
-        console.log('Extracted title:', extractedTitle);
-        searchQuery = extractedTitle;
-      } else {
-        // Fallback: try to extract from URL path
-        try {
-          const url = new URL(query);
-          const pathParts = url.pathname.split('/').filter(Boolean);
-          for (const part of pathParts) {
-            if (part.length > 5 && !/^[A-Z0-9]{10}$/.test(part) && !part.includes('.')) {
-              searchQuery = part.replace(/-/g, ' ').replace(/_/g, ' ');
-              break;
-            }
-          }
-        } catch { /* keep original */ }
-      }
-    }
+    allProducts = allProducts.filter((product) => product.price > 0);
 
-    console.log('Searching for:', searchQuery);
-
-    // Scrape all stores in parallel
-    const [amazonProducts, flipkartProducts, cromaProducts] = await Promise.all([
-      scrapeAmazon(searchQuery, apiKey),
-      scrapeFlipkart(searchQuery, apiKey),
-      scrapeCroma(searchQuery, apiKey),
-    ]);
-
-    let allProducts = [...amazonProducts, ...flipkartProducts, ...cromaProducts];
-
-    // Filter out products with 0 price
-    allProducts = allProducts.filter(p => p.price > 0);
-
-    // Sort by price
     allProducts.sort((a, b) => a.price - b.price);
 
-    // Mark best price
     if (allProducts.length > 0) {
       allProducts[0].is_best_price = true;
     }
