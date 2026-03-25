@@ -171,7 +171,16 @@ async function firecrawlRequest<T>(path: string, payload: Record<string, unknown
   });
 
   const responseText = await response.text();
-  const data = responseText ? JSON.parse(responseText) : {};
+  let data: unknown = {};
+  try {
+    data = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    if (!response.ok) {
+      throw new Error(`Firecrawl ${path} failed [${response.status}]: ${responseText.slice(0, 500)}`);
+    }
+
+    throw new Error(`Firecrawl ${path} returned invalid JSON`);
+  }
 
   if (!response.ok) {
     throw new Error(`Firecrawl ${path} failed [${response.status}]: ${responseText.slice(0, 500)}`);
@@ -248,21 +257,26 @@ async function searchStoreProducts(store: StoreConfig, referenceName: string, ap
     );
 
     const results: FirecrawlSearchResult[] = data?.data?.web || data?.web || [];
-    const candidates = results.filter((result) => result.url && isLikelyProductUrl(store, result.url));
+    const bestCandidate = results
+      .filter((result) => result.url && isLikelyProductUrl(store, result.url))
+      .map((result) => ({
+        result,
+        score: calculateMatchScore(referenceName, [result.title, result.description].filter(Boolean).join(' ')),
+      }))
+      .filter((item) => item.score >= 0.3)
+      .sort((a, b) => b.score - a.score)[0];
 
-    for (const candidate of candidates.slice(0, 3)) {
-      const previewText = [candidate.title, candidate.description].filter(Boolean).join(' ');
-      const previewScore = calculateMatchScore(referenceName, previewText);
-      if (previewScore < 0.3) continue;
+    if (!bestCandidate?.result.url) {
+      return null;
+    }
 
-      const scraped = await scrapeProductPage(candidate.url!, store, apiKey);
-      if (!scraped.product) continue;
+    const scraped = await scrapeProductPage(bestCandidate.result.url, store, apiKey);
+    if (!scraped.product) return null;
 
-      const matchScore = calculateMatchScore(referenceName, scraped.rawName);
-      console.log(`${store.store} match score:`, matchScore, scraped.rawName);
-      if (matchScore >= 0.35) {
-        return scraped.product;
-      }
+    const matchScore = calculateMatchScore(referenceName, scraped.rawName);
+    console.log(`${store.store} match score:`, matchScore, scraped.rawName);
+    if (matchScore >= 0.35) {
+      return scraped.product;
     }
   } catch (error) {
     console.error(`${store.store} search error:`, error);
