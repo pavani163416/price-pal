@@ -8,15 +8,15 @@ const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
 const PRODUCT_SCHEMA = {
   type: 'object',
   properties: {
-    name: { type: 'string' },
-    price: { type: 'number' },
-    original_price: { type: 'number' },
-    rating: { type: 'number' },
-    reviews_count: { type: 'number' },
-    image_url: { type: 'string' },
-    availability: { type: 'string' },
+    name: { type: 'string', description: 'Full product title/name exactly as shown on the page' },
+    price: { type: 'number', description: 'Current selling price in INR as a plain number without currency symbol, commas, or decimals. This is the final price the customer pays.' },
+    original_price: { type: 'number', description: 'MRP or original price before discount in INR as a plain number. Only if a strikethrough/crossed-out price is shown.' },
+    rating: { type: 'number', description: 'Product rating out of 5 (e.g. 4.2)' },
+    reviews_count: { type: 'number', description: 'Total number of ratings or reviews as a number' },
+    image_url: { type: 'string', description: 'URL of the main product image (the largest/primary product photo)' },
+    availability: { type: 'string', description: 'Stock status like "In Stock" or "Out of Stock"' },
   },
-  required: ['name'],
+  required: ['name', 'price'],
 };
 
 const STORE_CONFIGS = [
