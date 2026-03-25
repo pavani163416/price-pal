@@ -239,17 +239,23 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
   try {
     console.log(`Scraping ${store.store} product page:`, url);
 
+    const storeHints: Record<string, string> = {
+      amazon: 'Look for the price inside the "a-price-whole" or "priceBlockBuyingPriceString" element. The MRP/original price is usually shown with a strikethrough. The product title is in the "productTitle" span.',
+      flipkart: 'Look for the selling price (usually the larger bold price). The original price has a strikethrough. Product title is the main heading.',
+      croma: 'Look for the current selling price and any old/MRP price shown with strikethrough.',
+    };
+
     const data = await firecrawlRequest<any>(
       'scrape',
       {
         url,
         formats: [{
           type: 'json',
-          prompt: `Extract product details from this ${store.store} product page. Return JSON with: name (full product title), price (number only, no currency symbol or commas), original_price (number if available), rating (number like 4.2), reviews_count (number), image_url (main product image URL), availability (simple stock status string).`,
+          prompt: `Extract the exact product details from this ${store.store} product page. ${storeHints[store.key] || ''} IMPORTANT: Return the EXACT current selling price as shown on the page - the price the customer would actually pay right now. Do NOT guess or estimate prices. Return price as a plain number without currency symbols or commas (e.g. 28990 not ₹28,990). For image_url, return the main product image URL.`,
           schema: PRODUCT_SCHEMA,
         }],
         onlyMainContent: true,
-        waitFor: 3000,
+        waitFor: 5000,
       },
       apiKey,
     );
