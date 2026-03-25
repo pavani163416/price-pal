@@ -86,6 +86,52 @@ function normalizeInputQuery(value: string): string {
   return trimmed;
 }
 
+function canonicalizeProductUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.replace(/^www\./, '');
+    const pathParts = parsed.pathname.split('/').filter(Boolean);
+
+    if (hostname.endsWith('amazon.in')) {
+      const dpIndex = pathParts.findIndex((part) => part.toLowerCase() === 'dp');
+      if (dpIndex >= 0 && pathParts[dpIndex + 1]) {
+        return `https://www.amazon.in/dp/${pathParts[dpIndex + 1]}`;
+      }
+    }
+
+    if (hostname.endsWith('flipkart.com') || hostname.endsWith('croma.com')) {
+      return `${parsed.origin}${parsed.pathname}`;
+    }
+
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+function deriveQueryFromUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const parts = parsed.pathname
+      .split('/')
+      .filter(Boolean)
+      .map((part) => decodeURIComponent(part));
+
+    const candidate = parts.find((part) => {
+      const normalized = part.toLowerCase();
+      return (
+        part.length > 5 &&
+        !['dp', 'p', 'gp', 'product', 'products', 'search', 's'].includes(normalized) &&
+        !/^[a-z0-9]{8,20}$/i.test(part)
+      );
+    });
+
+    return candidate ? candidate.replace(/[-_]+/g, ' ').trim() : url;
+  } catch {
+    return url;
+  }
+}
+
 function isLikelyUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
 }
@@ -143,7 +189,7 @@ function isLikelyProductUrl(store: StoreConfig, url: string): boolean {
 
     if (store.key === 'amazon') return pathname.includes('/dp/');
     if (store.key === 'flipkart') return pathname.includes('/p/');
-    if (store.key === 'croma') return !pathname.includes('/search') && !pathname.startsWith('/lp-');
+    if (store.key === 'croma') return pathname.includes('/p/');
 
     return true;
   } catch {
@@ -166,7 +212,7 @@ async function firecrawlRequest<T>(path: string, payload: Record<string, unknown
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    signal: createTimeoutSignal(path === 'search' ? 8000 : 12000),
+    signal: createTimeoutSignal(path === 'search' ? 10000 : 20000),
     body: JSON.stringify(payload),
   });
 
@@ -302,14 +348,15 @@ async function resolveProductForStore(
 async function buildComparisonProducts(query: string, apiKey: string): Promise<Product[]> {
   const normalizedQuery = normalizeInputQuery(query);
   const queryIsUrl = isLikelyUrl(normalizedQuery);
-  const sourceStore = queryIsUrl ? getStoreByUrl(normalizedQuery) : undefined;
+  const canonicalQuery = queryIsUrl ? canonicalizeProductUrl(normalizedQuery) : normalizedQuery;
+  const sourceStore = queryIsUrl ? getStoreByUrl(canonicalQuery) : undefined;
 
-  let referenceName = normalizedQuery;
+  let referenceName = queryIsUrl ? deriveQueryFromUrl(canonicalQuery) : normalizedQuery;
   let sourceProduct: Product | null = null;
 
-  if (queryIsUrl && sourceStore) {
+  if (queryIsUrl && sourceStore && isLikelyProductUrl(sourceStore, canonicalQuery)) {
     console.log('Detected supported product URL, scraping source product...');
-    const sourceScrape = await scrapeProductPage(normalizedQuery, sourceStore, apiKey);
+    const sourceScrape = await scrapeProductPage(canonicalQuery, sourceStore, apiKey);
     sourceProduct = sourceScrape.product;
     if (sourceScrape.rawName) {
       referenceName = sourceScrape.rawName;
@@ -324,7 +371,7 @@ async function buildComparisonProducts(query: string, apiKey: string): Promise<P
         store,
         referenceName,
         apiKey,
-        sourceStore?.key === store.key ? normalizedQuery : undefined,
+        sourceStore?.key === store.key ? canonicalQuery : undefined,
       )
     )
   );
