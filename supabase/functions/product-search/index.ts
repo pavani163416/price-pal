@@ -143,11 +143,19 @@ function isLikelyProductUrl(store: StoreConfig, url: string): boolean {
 
     if (store.key === 'amazon') return pathname.includes('/dp/');
     if (store.key === 'flipkart') return pathname.includes('/p/');
-    if (store.key === 'croma') return !pathname.includes('/search');
+    if (store.key === 'croma') return !pathname.includes('/search') && !pathname.startsWith('/lp-');
 
     return true;
   } catch {
     return false;
+  }
+}
+
+function createTimeoutSignal(ms: number): AbortSignal | undefined {
+  try {
+    return AbortSignal.timeout(ms);
+  } catch {
+    return undefined;
   }
 }
 
@@ -158,6 +166,7 @@ async function firecrawlRequest<T>(path: string, payload: Record<string, unknown
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
+    signal: createTimeoutSignal(path === 'search' ? 8000 : 12000),
     body: JSON.stringify(payload),
   });
 
@@ -244,7 +253,7 @@ async function searchStoreProducts(store: StoreConfig, referenceName: string, ap
     for (const candidate of candidates.slice(0, 3)) {
       const previewText = [candidate.title, candidate.description].filter(Boolean).join(' ');
       const previewScore = calculateMatchScore(referenceName, previewText);
-      if (previewScore < 0.2) continue;
+      if (previewScore < 0.3) continue;
 
       const scraped = await scrapeProductPage(candidate.url!, store, apiKey);
       if (!scraped.product) continue;
