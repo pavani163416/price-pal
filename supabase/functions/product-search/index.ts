@@ -214,23 +214,21 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
       croma: 'Look for the current selling price and any old/MRP price shown with strikethrough.',
     };
 
-    // Use Firecrawl v1 scrape with JSON extraction
+    // Use Firecrawl v1 scrape with extract format
     const data = await firecrawlRequest<any>(
       'scrape',
       {
         url,
-        formats: [
-          {
-            type: 'json',
-            prompt: `Extract the exact product details from this ${store.store} product page. ${storeHints[store.key] || ''} IMPORTANT: Return the EXACT current selling price as shown on the page - the price the customer would actually pay right now. Do NOT guess or estimate prices. Return price as a plain number without currency symbols or commas (e.g. 28990 not ₹28,990). For image_url, return the main product image URL.`,
-            schema: PRODUCT_SCHEMA,
-          },
-        ],
+        formats: ['extract'],
+        extract: {
+          prompt: `Extract the exact product details from this ${store.store} product page. ${storeHints[store.key] || ''} IMPORTANT: Return the EXACT current selling price as shown on the page - the price the customer would actually pay right now. Do NOT guess or estimate prices. Return price as a plain number without currency symbols or commas (e.g. 28990 not ₹28,990). For image_url, return the main product image URL.`,
+          schema: PRODUCT_SCHEMA,
+        },
         onlyMainContent: true,
         waitFor: 5000,
       },
       apiKey,
-      30000, // 30s timeout for scraping
+      30000,
     );
 
     // v1 response: data is in data.data.json or data.json
