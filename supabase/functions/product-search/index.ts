@@ -231,9 +231,9 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
       30000,
     );
 
-    // v1 response: data is in data.data.json or data.json
+    // v1 response: extract data is in data.data.extract or data.extract
     const metadata = data?.data?.metadata || data?.metadata || {};
-    const extracted = data?.data?.json || data?.json || {};
+    const extracted = data?.data?.extract || data?.extract || data?.data?.json || data?.json || {};
     const rawName = cleanProductName(extracted.name || metadata.title || '');
 
     console.log(`${store.store} extracted:`, JSON.stringify({ name: rawName, price: extracted.price, image: extracted.image_url?.substring(0, 50) }));
