@@ -3,7 +3,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v2';
+const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v1';
 
 const PRODUCT_SCHEMA = {
   type: 'object',
@@ -41,27 +41,6 @@ const STORE_CONFIGS = [
 ] as const;
 
 type StoreConfig = typeof STORE_CONFIGS[number];
-
-interface FirecrawlSearchResult {
-  url?: string;
-  title?: string;
-  description?: string;
-}
-
-interface ScrapedProductData {
-  name?: string;
-  price?: number;
-  original_price?: number;
-  rating?: number;
-  reviews_count?: number;
-  image_url?: string;
-  availability?: string;
-}
-
-interface ScrapeResult {
-  product: Product | null;
-  rawName: string;
-}
 
 interface Product {
   id: string;
@@ -165,12 +144,10 @@ function normalizeNameForMatching(value: string): string {
 }
 
 function calculateMatchScore(reference: string, candidate: string): number {
-  const referenceTokens = new Set(normalizeNameForMatching(reference).split(' ').filter((token) => token.length > 1));
-  const candidateTokens = new Set(normalizeNameForMatching(candidate).split(' ').filter((token) => token.length > 1));
+  const referenceTokens = new Set(normalizeNameForMatching(reference).split(' ').filter((t) => t.length > 1));
+  const candidateTokens = new Set(normalizeNameForMatching(candidate).split(' ').filter((t) => t.length > 1));
 
-  if (referenceTokens.size === 0 || candidateTokens.size === 0) {
-    return 0;
-  }
+  if (referenceTokens.size === 0 || candidateTokens.size === 0) return 0;
 
   let matches = 0;
   for (const token of referenceTokens) {
@@ -184,58 +161,50 @@ function isLikelyProductUrl(store: StoreConfig, url: string): boolean {
   try {
     const parsed = new URL(url);
     const pathname = parsed.pathname.toLowerCase();
-
     if (!parsed.hostname.replace(/^www\./, '').endsWith(store.domain)) return false;
-
     if (store.key === 'amazon') return pathname.includes('/dp/');
     if (store.key === 'flipkart') return pathname.includes('/p/');
     if (store.key === 'croma') return pathname.includes('/p/');
-
     return true;
   } catch {
     return false;
   }
 }
 
-function createTimeoutSignal(ms: number): AbortSignal | undefined {
-  try {
-    return AbortSignal.timeout(ms);
-  } catch {
-    return undefined;
-  }
-}
+async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string, timeoutMs = 20000): Promise<T> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string): Promise<T> {
-  const response = await fetch(`${FIRECRAWL_BASE_URL}/${path}`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    signal: createTimeoutSignal(path === 'search' ? 10000 : 20000),
-    body: JSON.stringify(payload),
-  });
-
-  const responseText = await response.text();
-  let data: unknown = {};
   try {
-    data = responseText ? JSON.parse(responseText) : {};
-  } catch {
+    const response = await fetch(`${FIRECRAWL_BASE_URL}/${path}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await response.text();
+    let data: unknown = {};
+    try {
+      data = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      throw new Error(`Firecrawl ${path} returned invalid JSON: ${responseText.slice(0, 200)}`);
+    }
+
     if (!response.ok) {
       throw new Error(`Firecrawl ${path} failed [${response.status}]: ${responseText.slice(0, 500)}`);
     }
 
-    throw new Error(`Firecrawl ${path} returned invalid JSON`);
+    return data as T;
+  } finally {
+    clearTimeout(timer);
   }
-
-  if (!response.ok) {
-    throw new Error(`Firecrawl ${path} failed [${response.status}]: ${responseText.slice(0, 500)}`);
-  }
-
-  return data as T;
 }
 
-async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string): Promise<ScrapeResult> {
+async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string): Promise<{ product: Product | null; rawName: string }> {
   try {
     console.log(`Scraping ${store.store} product page:`, url);
 
@@ -245,33 +214,36 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
       croma: 'Look for the current selling price and any old/MRP price shown with strikethrough.',
     };
 
+    // Use Firecrawl v1 scrape with JSON extraction
     const data = await firecrawlRequest<any>(
       'scrape',
       {
         url,
-        formats: [{
-          type: 'json',
-          prompt: `Extract the exact product details from this ${store.store} product page. ${storeHints[store.key] || ''} IMPORTANT: Return the EXACT current selling price as shown on the page - the price the customer would actually pay right now. Do NOT guess or estimate prices. Return price as a plain number without currency symbols or commas (e.g. 28990 not ₹28,990). For image_url, return the main product image URL.`,
-          schema: PRODUCT_SCHEMA,
-        }],
+        formats: [
+          {
+            type: 'json',
+            prompt: `Extract the exact product details from this ${store.store} product page. ${storeHints[store.key] || ''} IMPORTANT: Return the EXACT current selling price as shown on the page - the price the customer would actually pay right now. Do NOT guess or estimate prices. Return price as a plain number without currency symbols or commas (e.g. 28990 not ₹28,990). For image_url, return the main product image URL.`,
+            schema: PRODUCT_SCHEMA,
+          },
+        ],
         onlyMainContent: true,
         waitFor: 5000,
       },
       apiKey,
+      30000, // 30s timeout for scraping
     );
 
+    // v1 response: data is in data.data.json or data.json
     const metadata = data?.data?.metadata || data?.metadata || {};
-    const extracted: ScrapedProductData = data?.data?.json || data?.json || {};
+    const extracted = data?.data?.json || data?.json || {};
     const rawName = cleanProductName(extracted.name || metadata.title || '');
 
-    if (!rawName) {
-      return { product: null, rawName: '' };
-    }
+    console.log(`${store.store} extracted:`, JSON.stringify({ name: rawName, price: extracted.price, image: extracted.image_url?.substring(0, 50) }));
+
+    if (!rawName) return { product: null, rawName: '' };
 
     const price = Number(extracted.price || 0);
-    if (!Number.isFinite(price) || price <= 0) {
-      return { product: null, rawName };
-    }
+    if (!Number.isFinite(price) || price <= 0) return { product: null, rawName };
 
     return {
       rawName,
@@ -292,13 +264,14 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
       },
     };
   } catch (error) {
-    console.error(`${store.store} product page scrape error:`, error);
+    console.error(`${store.store} scrape error:`, error);
     return { product: null, rawName: '' };
   }
 }
 
 async function searchStoreProducts(store: StoreConfig, referenceName: string, apiKey: string): Promise<Product | null> {
   try {
+    // v1 search endpoint
     const data = await firecrawlRequest<any>(
       'search',
       {
@@ -306,34 +279,39 @@ async function searchStoreProducts(store: StoreConfig, referenceName: string, ap
         limit: 5,
       },
       apiKey,
+      15000,
     );
 
-    const results: FirecrawlSearchResult[] = data?.data?.web || data?.web || [];
+    // v1 response: results are in data.data array
+    const results: any[] = data?.data || [];
+    console.log(`${store.store} search returned ${results.length} results`);
+
     const bestCandidate = results
-      .filter((result) => result.url && isLikelyProductUrl(store, result.url))
-      .map((result) => ({
-        result,
-        score: calculateMatchScore(referenceName, [result.title, result.description].filter(Boolean).join(' ')),
+      .filter((r: any) => r.url && isLikelyProductUrl(store, r.url))
+      .map((r: any) => ({
+        url: r.url,
+        score: calculateMatchScore(referenceName, [r.title, r.description].filter(Boolean).join(' ')),
       }))
-      .filter((item) => item.score >= 0.3)
+      .filter((item) => item.score >= 0.25)
       .sort((a, b) => b.score - a.score)[0];
 
-    if (!bestCandidate?.result.url) {
+    if (!bestCandidate?.url) {
+      console.log(`${store.store}: no matching product URL found`);
       return null;
     }
 
-    const scraped = await scrapeProductPage(bestCandidate.result.url, store, apiKey);
+    console.log(`${store.store}: best candidate URL: ${bestCandidate.url} (score: ${bestCandidate.score})`);
+    const scraped = await scrapeProductPage(bestCandidate.url, store, apiKey);
     if (!scraped.product) return null;
 
     const matchScore = calculateMatchScore(referenceName, scraped.rawName);
-    console.log(`${store.store} match score:`, matchScore, scraped.rawName);
-    if (matchScore >= 0.35) {
+    console.log(`${store.store} final match score: ${matchScore}`);
+    if (matchScore >= 0.25) {
       return scraped.product;
     }
   } catch (error) {
     console.error(`${store.store} search error:`, error);
   }
-
   return null;
 }
 
@@ -347,7 +325,6 @@ async function resolveProductForStore(
     const direct = await scrapeProductPage(exactUrl, store, apiKey);
     if (direct.product) return direct.product;
   }
-
   return await searchStoreProducts(store, referenceName, apiKey);
 }
 
@@ -360,6 +337,7 @@ async function buildComparisonProducts(query: string, apiKey: string): Promise<P
   let referenceName = queryIsUrl ? deriveQueryFromUrl(canonicalQuery) : normalizedQuery;
   let sourceProduct: Product | null = null;
 
+  // If it's a product URL from a supported store, scrape it first to get the real product name
   if (queryIsUrl && sourceStore && isLikelyProductUrl(sourceStore, canonicalQuery)) {
     console.log('Detected supported product URL, scraping source product...');
     const sourceScrape = await scrapeProductPage(canonicalQuery, sourceStore, apiKey);
@@ -369,8 +347,9 @@ async function buildComparisonProducts(query: string, apiKey: string): Promise<P
     }
   }
 
-  console.log('Searching for reference product:', referenceName);
+  console.log('Searching across stores for:', referenceName);
 
+  // Search all stores in parallel
   const products = await Promise.all(
     STORE_CONFIGS.map((store) =>
       resolveProductForStore(
@@ -418,9 +397,7 @@ Deno.serve(async (req) => {
     }
 
     let allProducts = await buildComparisonProducts(query, apiKey);
-
-    allProducts = allProducts.filter((product) => product.price > 0);
-
+    allProducts = allProducts.filter((p) => p.price > 0);
     allProducts.sort((a, b) => a.price - b.price);
 
     if (allProducts.length > 0) {
