@@ -14,7 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      price_alerts: {
+        Row: {
+          created_at: string
+          current_price: number
+          id: string
+          is_active: boolean
+          product_image: string | null
+          product_name: string
+          product_url: string | null
+          store: string
+          target_price: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_price: number
+          id?: string
+          is_active?: boolean
+          product_image?: string | null
+          product_name: string
+          product_url?: string | null
+          store: string
+          target_price: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_price?: number
+          id?: string
+          is_active?: boolean
+          product_image?: string | null
+          product_name?: string
+          product_url?: string | null
+          store?: string
+          target_price?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
