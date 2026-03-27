@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import HeroSearch from "@/components/HeroSearch";
 import ComparisonResults from "@/components/ComparisonResults";
@@ -24,15 +25,20 @@ const Compare = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <section className="bg-card py-12">
-        <div className="container mx-auto px-4 text-center">
+      <section className="relative overflow-hidden bg-card py-12">
+        <div className="pointer-events-none absolute inset-0 animated-gradient" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="container relative mx-auto px-4 text-center"
+        >
           <h1 className="font-display text-3xl font-extrabold text-foreground md:text-4xl">
-            Compare <span className="text-primary">Prices</span>
+            Compare <span className="text-gradient">Prices</span>
           </h1>
           <p className="mx-auto mt-2 max-w-xl font-body text-muted-foreground">
             Paste a product link or search by name to compare prices across stores.
           </p>
-        </div>
+        </motion.div>
       </section>
       <HeroSearch onSearch={handleSearch} isLoading={isLoading} />
 
@@ -41,11 +47,15 @@ const Compare = () => {
         <ComparisonResults products={products} query={query} />
       )}
       {!isLoading && hasSearched && products.length === 0 && (
-        <div className="container mx-auto px-4 py-16 text-center">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="container mx-auto px-4 py-16 text-center"
+        >
           <p className="font-body text-lg text-muted-foreground">
             No results found. Try a different product name or URL.
           </p>
-        </div>
+        </motion.div>
       )}
 
       <div className="flex-1" />

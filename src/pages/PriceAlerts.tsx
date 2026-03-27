@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import { Bell, BellOff, Trash2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PriceAlert {
   id: string;
@@ -93,112 +94,134 @@ const PriceAlerts = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Navbar />
-      <div className="container mx-auto flex-1 px-4 py-12">
-        <div className="mb-8 flex items-center justify-between">
+      <div className="relative container mx-auto flex-1 px-4 py-12">
+        <div className="pointer-events-none absolute inset-0 animated-gradient opacity-30 rounded-3xl" />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative mb-8 flex items-center justify-between"
+        >
           <div>
             <h1 className="font-display text-3xl font-bold text-foreground">Price Alerts</h1>
             <p className="mt-1 font-body text-muted-foreground">Get notified when prices drop on your favorite products.</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 active:translate-y-0"
           >
             <Plus className="h-4 w-4" />
             New Alert
           </button>
-        </div>
+        </motion.div>
 
-        {showForm && (
-          <form onSubmit={handleCreate} className="mb-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-lg">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Product Name</label>
-                <input
-                  type="text"
-                  required
-                  value={form.product_name}
-                  onChange={(e) => setForm({ ...form, product_name: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="iPhone 15 Pro Max"
-                />
+        <AnimatePresence>
+          {showForm && (
+            <motion.form
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              onSubmit={handleCreate}
+              className="relative mb-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-[0_16px_40px_-12px_hsl(var(--primary)/0.1)] overflow-hidden"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Product Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={form.product_name}
+                    onChange={(e) => setForm({ ...form, product_name: e.target.value })}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="iPhone 15 Pro Max"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Product URL (optional)</label>
+                  <input
+                    type="url"
+                    value={form.product_url}
+                    onChange={(e) => setForm({ ...form, product_url: e.target.value })}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="https://amazon.in/..."
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Store</label>
+                  <select
+                    value={form.store}
+                    onChange={(e) => setForm({ ...form, store: e.target.value })}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  >
+                    <option>Amazon</option>
+                    <option>Flipkart</option>
+                    <option>Croma</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Current Price (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.current_price}
+                    onChange={(e) => setForm({ ...form, current_price: e.target.value })}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="49999"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-foreground">Alert when price drops to (₹)</label>
+                  <input
+                    type="number"
+                    required
+                    value={form.target_price}
+                    onChange={(e) => setForm({ ...form, target_price: e.target.value })}
+                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    placeholder="45000"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Product URL (optional)</label>
-                <input
-                  type="url"
-                  value={form.product_url}
-                  onChange={(e) => setForm({ ...form, product_url: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="https://amazon.in/..."
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Store</label>
-                <select
-                  value={form.store}
-                  onChange={(e) => setForm({ ...form, store: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className="rounded-xl bg-primary px-6 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:-translate-y-0.5"
                 >
-                  <option>Amazon</option>
-                  <option>Flipkart</option>
-                  <option>Croma</option>
-                </select>
+                  Create Alert
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowForm(false)}
+                  className="rounded-xl border border-border px-6 py-2.5 font-display text-sm font-semibold text-foreground hover:bg-muted"
+                >
+                  Cancel
+                </button>
               </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Current Price (₹)</label>
-                <input
-                  type="number"
-                  required
-                  value={form.current_price}
-                  onChange={(e) => setForm({ ...form, current_price: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="49999"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-foreground">Alert when price drops to (₹)</label>
-                <input
-                  type="number"
-                  required
-                  value={form.target_price}
-                  onChange={(e) => setForm({ ...form, target_price: e.target.value })}
-                  className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="45000"
-                />
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                className="rounded-lg bg-primary px-6 py-2.5 font-display text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-              >
-                Create Alert
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-lg border border-border px-6 py-2.5 font-display text-sm font-semibold text-foreground hover:bg-muted"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        )}
+            </motion.form>
+          )}
+        </AnimatePresence>
 
         {loading ? (
           <div className="py-16 text-center text-muted-foreground">Loading alerts…</div>
         ) : alerts.length === 0 ? (
-          <div className="py-16 text-center">
-            <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground/40" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="py-16 text-center"
+          >
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted glow-primary">
+              <Bell className="h-10 w-10 text-muted-foreground/40" />
+            </div>
             <p className="font-body text-lg text-muted-foreground">No price alerts yet.</p>
             <p className="text-sm text-muted-foreground">Create one to get notified when prices drop!</p>
-          </div>
+          </motion.div>
         ) : (
-          <div className="space-y-3">
-            {alerts.map((alert) => (
-              <div
+          <div className="relative space-y-3">
+            {alerts.map((alert, i) => (
+              <motion.div
                 key={alert.id}
-                className={`flex items-center gap-4 rounded-xl border bg-card p-5 shadow-sm transition-opacity ${
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={`flex items-center gap-4 rounded-xl border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_hsl(var(--primary)/0.1)] ${
                   !alert.is_active ? "border-border opacity-60" : "border-primary/20"
                 }`}
               >
@@ -211,19 +234,19 @@ const PriceAlerts = () => {
                 </div>
                 <button
                   onClick={() => toggleAlert(alert.id, alert.is_active)}
-                  className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-muted hover:text-foreground hover:shadow-sm"
                   title={alert.is_active ? "Pause alert" : "Resume alert"}
                 >
                   {alert.is_active ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
                 </button>
                 <button
                   onClick={() => deleteAlert(alert.id)}
-                  className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive hover:shadow-sm"
                   title="Delete alert"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
-              </div>
+              </motion.div>
             ))}
           </div>
         )}
