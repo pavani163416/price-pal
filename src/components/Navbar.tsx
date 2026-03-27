@@ -1,13 +1,21 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.png";
-import { User, LogOut, Info, ChevronDown } from "lucide-react";
+import { User, LogOut, Info, ChevronDown, Menu } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 const Navbar = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,11 +31,18 @@ const Navbar = () => {
   const handleSignOut = async () => {
     await signOut();
     setDropdownOpen(false);
+    setMobileOpen(false);
     navigate("/");
   };
 
+  const navLinks = [
+    { to: "/", label: "Home" },
+    { to: "/compare", label: "Compare" },
+    { to: "/price-alerts", label: "Price Alerts" },
+  ];
+
   return (
-    <nav className="border-b border-border bg-card">
+    <nav className="border-b border-border bg-card shadow-[0_4px_20px_-4px_hsl(var(--primary)/0.12)]">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link to="/" className="flex items-center gap-2">
           <img src={logo} alt="Pricewise.ai" className="h-8 w-8" />
@@ -36,10 +51,13 @@ const Navbar = () => {
           </span>
         </Link>
 
-        <div className="flex items-center gap-6 font-body text-sm text-muted-foreground">
-          <Link to="/" className="transition-colors hover:text-foreground">Home</Link>
-          <Link to="/compare" className="transition-colors hover:text-foreground">Compare</Link>
-          <Link to="/price-alerts" className="transition-colors hover:text-foreground">Price Alerts</Link>
+        {/* Desktop nav */}
+        <div className="hidden items-center gap-6 font-body text-sm text-muted-foreground md:flex">
+          {navLinks.map((link) => (
+            <Link key={link.to} to={link.to} className="transition-colors hover:text-foreground">
+              {link.label}
+            </Link>
+          ))}
 
           {user ? (
             <div className="relative" ref={dropdownRef}>
@@ -85,12 +103,80 @@ const Navbar = () => {
           ) : (
             <Link
               to="/signin"
-              className="rounded-lg bg-primary px-4 py-1.5 font-display text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="rounded-lg bg-primary px-4 py-1.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_4px_14px_-3px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:shadow-[0_6px_20px_-3px_hsl(var(--primary)/0.6)]"
             >
               Sign In
             </Link>
           )}
         </div>
+
+        {/* Mobile hamburger */}
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <button className="flex h-10 w-10 items-center justify-center rounded-lg border border-border transition-colors hover:bg-muted md:hidden">
+              <Menu className="h-5 w-5 text-foreground" />
+            </button>
+          </SheetTrigger>
+          <SheetContent side="right" className="w-72 bg-card">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <img src={logo} alt="Pricewise.ai" className="h-7 w-7" />
+                <span className="font-display text-lg font-bold text-foreground">
+                  Pricewise<span className="text-primary">.ai</span>
+                </span>
+              </SheetTitle>
+            </SheetHeader>
+            <div className="mt-6 flex flex-col gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  onClick={() => setMobileOpen(false)}
+                  className="rounded-lg px-4 py-3 font-body text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="my-2 border-t border-border" />
+              {user ? (
+                <>
+                  <Link
+                    to="#about"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-foreground transition-colors hover:bg-muted"
+                  >
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    About
+                  </Link>
+                  <Link
+                    to="/profile"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-foreground transition-colors hover:bg-muted"
+                  >
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    Profile
+                  </Link>
+                  <div className="my-2 border-t border-border" />
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/signin"
+                  onClick={() => setMobileOpen(false)}
+                  className="mx-4 mt-2 rounded-lg bg-primary py-2.5 text-center font-display text-sm font-semibold text-primary-foreground shadow-[0_4px_14px_-3px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90"
+                >
+                  Sign In
+                </Link>
+              )}
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </nav>
   );
