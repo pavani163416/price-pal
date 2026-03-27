@@ -1,12 +1,19 @@
 import logo from "@/assets/logo.png";
+import { motion } from "framer-motion";
 
 const Footer = () => (
-  <footer id="about" className="border-t border-border bg-card py-10">
-    <div className="container mx-auto flex flex-col items-center gap-4 px-4 text-center">
+  <footer id="about" className="relative border-t border-border bg-card py-10 overflow-hidden">
+    <div className="pointer-events-none absolute inset-0 animated-gradient opacity-30" />
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      className="container relative mx-auto flex flex-col items-center gap-4 px-4 text-center"
+    >
       <div className="flex items-center gap-2">
-        <img src={logo} alt="Pricewise.ai" className="h-6 w-6" />
+        <img src={logo} alt="Pricewise.ai" className="h-6 w-6 drop-shadow-[0_4px_8px_hsl(var(--primary)/0.3)]" />
         <span className="font-display text-lg font-bold text-foreground">
-          Pricewise<span className="text-primary">.ai</span>
+          Pricewise<span className="text-gradient">.ai</span>
         </span>
       </div>
       <p className="max-w-md font-body text-sm text-muted-foreground">
@@ -16,7 +23,7 @@ const Footer = () => (
       <p className="font-body text-xs text-muted-foreground">
         © {new Date().getFullYear()} Pricewise.ai — All rights reserved.
       </p>
-    </div>
+    </motion.div>
   </footer>
 );
 
