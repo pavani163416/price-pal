@@ -149,4 +149,18 @@
     );
     animation: shimmer 2s infinite;
   }
+
+  .bg-mesh {
+    background-image:
+      radial-gradient(at 20% 30%, hsl(var(--primary) / 0.08) 0px, transparent 50%),
+      radial-gradient(at 80% 70%, hsl(var(--secondary) / 0.08) 0px, transparent 50%),
+      radial-gradient(at 50% 50%, hsl(var(--accent) / 0.06) 0px, transparent 50%);
+  }
+
+  .bg-grid {
+    background-image: 
+      linear-gradient(hsl(var(--border) / 0.3) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.3) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
 }

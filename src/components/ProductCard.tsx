@@ -79,10 +79,14 @@ const ProductCard = ({ product, rank }: ProductCardProps) => {
             className={`w-fit rounded-full px-2.5 py-0.5 font-body text-[11px] font-medium ${
               product.availability === "In Stock"
                 ? "bg-primary/10 text-primary"
+                : product.availability === "Out of Stock" || product.availability === "Unavailable"
+                ? "bg-destructive/10 text-destructive"
                 : "bg-accent/20 text-accent-foreground"
             }`}
           >
-            {product.availability}
+            {product.availability === "Out of Stock" || product.availability === "Unavailable"
+              ? "❌ Out of Stock"
+              : product.availability}
           </span>
         </div>
 

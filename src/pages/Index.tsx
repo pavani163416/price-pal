@@ -41,7 +41,12 @@ const Index = () => {
         </div>
       )}
 
-      {!hasSearched && <HowItWorks />}
+      {!hasSearched && (
+        <>
+          <HowItWorks />
+          <TechStack />
+        </>
+      )}
       <div className="flex-1" />
       <Footer />
     </div>
