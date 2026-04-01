@@ -3,7 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
 import logo from "@/assets/logo.png";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 
 const SignUp = () => {
   const [fullName, setFullName] = useState("");
@@ -11,6 +11,7 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
@@ -90,15 +91,24 @@ const SignUp = () => {
           </div>
           <div>
             <label className="mb-1.5 block font-body text-sm font-medium text-foreground">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full rounded-lg border border-input bg-background px-4 py-2.5 font-body text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:shadow-[inset_0_2px_4px_hsl(var(--primary)/0.06)]"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full rounded-lg border border-input bg-background px-4 py-2.5 pr-11 font-body text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:shadow-[inset_0_2px_4px_hsl(var(--primary)/0.06)]"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <button
             type="submit"

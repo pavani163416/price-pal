@@ -17,8 +17,10 @@ const HeroSearch = ({ onSearch, isLoading }: HeroSearchProps) => {
 
   return (
     <section className="relative overflow-hidden bg-card py-20">
-      {/* Animated gradient background */}
+      {/* Layered background */}
       <div className="animated-gradient pointer-events-none absolute inset-0" />
+      <div className="pointer-events-none absolute inset-0 bg-mesh" />
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-40" />
 
       {/* Floating orbs */}
       <div className="pointer-events-none absolute -left-20 top-10 h-72 w-72 rounded-full bg-primary/8 blur-3xl float-animation" />

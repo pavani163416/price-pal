@@ -4,6 +4,7 @@ import HeroSearch from "@/components/HeroSearch";
 import ComparisonResults from "@/components/ComparisonResults";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import HowItWorks from "@/components/HowItWorks";
+import TechStack from "@/components/TechStack";
 import Footer from "@/components/Footer";
 import { searchProducts, type Product } from "@/lib/api";
 
@@ -40,7 +41,12 @@ const Index = () => {
         </div>
       )}
 
-      {!hasSearched && <HowItWorks />}
+      {!hasSearched && (
+        <>
+          <HowItWorks />
+          <TechStack />
+        </>
+      )}
       <div className="flex-1" />
       <Footer />
     </div>
