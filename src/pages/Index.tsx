@@ -4,7 +4,6 @@ import HeroSearch from "@/components/HeroSearch";
 import ComparisonResults from "@/components/ComparisonResults";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import HowItWorks from "@/components/HowItWorks";
-import TechStack from "@/components/TechStack";
 import Footer from "@/components/Footer";
 import { searchProducts, type Product } from "@/lib/api";
 
