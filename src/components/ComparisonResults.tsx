@@ -35,14 +35,14 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
       {/* Best Price Hero Card */}
       {bestProduct && (
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8 overflow-hidden rounded-2xl border-2 border-primary/30 bg-gradient-to-r from-primary/5 via-card to-primary/5 p-6 shadow-[0_20px_50px_-12px_hsl(var(--primary)/0.15)] transition-shadow hover:shadow-[0_24px_60px_-12px_hsl(var(--primary)/0.2)]"
+          transition={{ duration: 0.6 }}
+          className="mb-8 overflow-hidden rounded-2xl glass-card border-primary/20 p-6 shadow-[0_0_50px_-15px_hsl(var(--primary)/0.2)] transition-all hover:shadow-[0_0_60px_-15px_hsl(var(--primary)/0.3)]"
         >
           <div className="flex flex-col items-center gap-6 sm:flex-row">
             {bestProduct.image ? (
-              <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background p-2 transition-transform hover:scale-105">
+              <div className="flex h-32 w-32 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border/50 bg-muted/30 p-2 transition-transform hover:scale-105">
                 <img
                   src={bestProduct.image}
                   alt={bestProduct.name}
@@ -52,7 +52,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
             ) : null}
             <div className="flex flex-1 flex-col gap-2 text-center sm:text-left">
               <div className="flex items-center gap-2 justify-center sm:justify-start">
-                <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1">
+                <div className="flex items-center gap-1.5 rounded-full glow-border bg-primary/10 px-3 py-1">
                   <Trophy className="h-4 w-4 text-primary" />
                   <span className="font-display text-xs font-bold uppercase tracking-wider text-primary">
                     Lowest Price Found
@@ -77,7 +77,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
               </div>
               {savings > 0 && (
                 <p className="flex items-center gap-1.5 font-body text-sm text-muted-foreground justify-center sm:justify-start">
-                  <TrendingDown className="h-4 w-4 text-primary" />
+                  <TrendingDown className="h-4 w-4 text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]" />
                   Save up to{" "}
                   <span className="font-semibold text-primary">
                     {formatPrice(savings)}
@@ -90,7 +90,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
               href={bestProduct.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 rounded-xl bg-primary px-8 py-3 font-display text-sm font-semibold text-primary-foreground shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 active:translate-y-0"
+              className="shrink-0 rounded-xl bg-primary px-8 py-3 font-display text-sm font-semibold text-primary-foreground shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_-4px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 btn-press"
             >
               Buy at Best Price
             </a>
@@ -116,7 +116,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
           <select
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="rounded-lg border border-border bg-card px-3 py-2 font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="rounded-lg border border-border/50 bg-muted/30 px-3 py-2 font-body text-sm text-foreground backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
           >
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
