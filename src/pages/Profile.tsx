@@ -19,50 +19,48 @@ const Profile = () => {
   }, [user]);
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       <div className="relative container mx-auto flex-1 px-4 py-12">
-        <div className="pointer-events-none absolute inset-0 animated-gradient opacity-30 rounded-3xl" />
+        <div className="pointer-events-none absolute inset-0 bg-mesh opacity-30" />
+
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="relative mb-8 font-display text-3xl font-bold text-foreground"
         >
-          My Profile
+          My <span className="text-gradient">Profile</span>
         </motion.h1>
+
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="relative max-w-lg rounded-2xl border border-border bg-card p-8 shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.12),0_8px_24px_-8px_hsl(var(--foreground)/0.06)] transition-shadow hover:shadow-[0_24px_70px_-15px_hsl(var(--primary)/0.18)]"
+          className="relative max-w-lg rounded-2xl glass-card p-8 shadow-[0_0_50px_-15px_hsl(var(--primary)/0.15)] transition-all hover:shadow-[0_0_60px_-15px_hsl(var(--primary)/0.2)]"
         >
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 glow-primary">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-primary/20 to-secondary/20 pulse-glow">
             <User className="h-10 w-10 text-primary" />
           </div>
           <div className="space-y-4">
-            <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted">
-              <User className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-xs text-muted-foreground">Full Name</p>
-                <p className="font-medium text-foreground">{profile?.full_name || "Not set"}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted">
-              <Mail className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-xs text-muted-foreground">Email</p>
-                <p className="font-medium text-foreground">{profile?.email || user?.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3 transition-colors hover:bg-muted">
-              <Calendar className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-xs text-muted-foreground">Member Since</p>
-                <p className="font-medium text-foreground">
-                  {profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "—"}
-                </p>
-              </div>
-            </div>
+            {[
+              { icon: User, label: "Full Name", value: profile?.full_name || "Not set" },
+              { icon: Mail, label: "Email", value: profile?.email || user?.email },
+              { icon: Calendar, label: "Member Since", value: profile?.created_at ? new Date(profile.created_at).toLocaleDateString() : "—" },
+            ].map((item, i) => (
+              <motion.div
+                key={item.label}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.15 + i * 0.1 }}
+                className="flex items-center gap-3 rounded-xl bg-muted/20 border border-border/30 p-3.5 transition-all hover:bg-muted/40 hover:border-primary/20"
+              >
+                <item.icon className="h-4 w-4 text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]" />
+                <div>
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className="font-medium text-foreground">{item.value}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </motion.div>
       </div>
