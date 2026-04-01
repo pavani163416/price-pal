@@ -51,6 +51,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        neon: {
+          cyan: "hsl(var(--neon-cyan))",
+          purple: "hsl(var(--neon-purple))",
+          pink: "hsl(var(--neon-pink))",
+        },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
@@ -80,11 +85,22 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.6" },
         },
+        "spin-slow": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
+        "tilt": {
+          "0%, 100%": { transform: "rotateY(0deg) rotateX(0deg)" },
+          "25%": { transform: "rotateY(3deg) rotateX(2deg)" },
+          "75%": { transform: "rotateY(-3deg) rotateX(-2deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-subtle": "pulse-subtle 1.5s ease-in-out infinite",
+        "spin-slow": "spin-slow 8s linear infinite",
+        "tilt": "tilt 6s ease-in-out infinite",
       },
     },
   },

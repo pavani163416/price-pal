@@ -92,22 +92,25 @@ const PriceAlerts = () => {
   if (authLoading) return null;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       <Navbar />
       <div className="relative container mx-auto flex-1 px-4 py-12">
-        <div className="pointer-events-none absolute inset-0 animated-gradient opacity-30 rounded-3xl" />
+        <div className="pointer-events-none absolute inset-0 bg-mesh opacity-30" />
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative mb-8 flex items-center justify-between"
+          className="relative mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
         >
           <div>
-            <h1 className="font-display text-3xl font-bold text-foreground">Price Alerts</h1>
+            <h1 className="font-display text-3xl font-bold text-foreground">
+              Price <span className="text-gradient">Alerts</span>
+            </h1>
             <p className="mt-1 font-body text-muted-foreground">Get notified when prices drop on your favorite products.</p>
           </div>
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 active:translate-y-0"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_-4px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 btn-press"
           >
             <Plus className="h-4 w-4" />
             New Alert
@@ -121,7 +124,7 @@ const PriceAlerts = () => {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               onSubmit={handleCreate}
-              className="relative mb-8 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-[0_16px_40px_-12px_hsl(var(--primary)/0.1)] overflow-hidden"
+              className="relative mb-8 space-y-4 rounded-2xl glass-card p-6 shadow-[0_0_40px_-12px_hsl(var(--primary)/0.15)] overflow-hidden"
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -131,7 +134,7 @@ const PriceAlerts = () => {
                     required
                     value={form.product_name}
                     onChange={(e) => setForm({ ...form, product_name: e.target.value })}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all neu-inset"
                     placeholder="iPhone 15 Pro Max"
                   />
                 </div>
@@ -141,7 +144,7 @@ const PriceAlerts = () => {
                     type="url"
                     value={form.product_url}
                     onChange={(e) => setForm({ ...form, product_url: e.target.value })}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all neu-inset"
                     placeholder="https://amazon.in/..."
                   />
                 </div>
@@ -150,7 +153,7 @@ const PriceAlerts = () => {
                   <select
                     value={form.store}
                     onChange={(e) => setForm({ ...form, store: e.target.value })}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition-all"
                   >
                     <option>Amazon</option>
                     <option>Flipkart</option>
@@ -164,7 +167,7 @@ const PriceAlerts = () => {
                     required
                     value={form.current_price}
                     onChange={(e) => setForm({ ...form, current_price: e.target.value })}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all neu-inset"
                     placeholder="49999"
                   />
                 </div>
@@ -175,7 +178,7 @@ const PriceAlerts = () => {
                     required
                     value={form.target_price}
                     onChange={(e) => setForm({ ...form, target_price: e.target.value })}
-                    className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground shadow-[inset_0_2px_4px_hsl(var(--foreground)/0.04)] focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full rounded-xl border border-border/50 bg-muted/30 px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all neu-inset"
                     placeholder="45000"
                   />
                 </div>
@@ -183,14 +186,14 @@ const PriceAlerts = () => {
               <div className="flex gap-3">
                 <button
                   type="submit"
-                  className="rounded-xl bg-primary px-6 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:-translate-y-0.5"
+                  className="rounded-xl bg-primary px-6 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_-4px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 btn-press"
                 >
                   Create Alert
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="rounded-xl border border-border px-6 py-2.5 font-display text-sm font-semibold text-foreground hover:bg-muted"
+                  className="rounded-xl border border-border/50 bg-muted/30 px-6 py-2.5 font-display text-sm font-semibold text-foreground hover:bg-muted/60 transition-all btn-press"
                 >
                   Cancel
                 </button>
@@ -207,11 +210,11 @@ const PriceAlerts = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="py-16 text-center"
           >
-            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted glow-primary">
+            <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl glass-card pulse-glow">
               <Bell className="h-10 w-10 text-muted-foreground/40" />
             </div>
             <p className="font-body text-lg text-muted-foreground">No price alerts yet.</p>
-            <p className="text-sm text-muted-foreground">Create one to get notified when prices drop!</p>
+            <p className="text-sm text-muted-foreground/60">Create one to get notified when prices drop!</p>
           </motion.div>
         ) : (
           <div className="relative space-y-3">
@@ -221,27 +224,28 @@ const PriceAlerts = () => {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className={`flex items-center gap-4 rounded-xl border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_40px_-12px_hsl(var(--primary)/0.1)] ${
-                  !alert.is_active ? "border-border opacity-60" : "border-primary/20"
+                whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                className={`flex items-center gap-4 rounded-2xl glass-card p-5 transition-all duration-300 hover:shadow-[0_0_30px_-10px_hsl(var(--primary)/0.15)] ${
+                  !alert.is_active ? "opacity-50" : "border-primary/15"
                 }`}
               >
                 <div className="flex-1">
                   <h3 className="font-display font-bold text-foreground">{alert.product_name}</h3>
                   <p className="text-sm text-muted-foreground">
                     {alert.store} · Current: {formatPrice(alert.current_price)} · Target:{" "}
-                    <span className="font-semibold text-primary">{formatPrice(alert.target_price)}</span>
+                    <span className="font-semibold text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]">{formatPrice(alert.target_price)}</span>
                   </p>
                 </div>
                 <button
                   onClick={() => toggleAlert(alert.id, alert.is_active)}
-                  className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-muted hover:text-foreground hover:shadow-sm"
+                  className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary btn-press"
                   title={alert.is_active ? "Pause alert" : "Resume alert"}
                 >
                   {alert.is_active ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
                 </button>
                 <button
                   onClick={() => deleteAlert(alert.id)}
-                  className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive hover:shadow-sm"
+                  className="rounded-xl p-2.5 text-muted-foreground transition-all hover:bg-destructive/10 hover:text-destructive btn-press"
                   title="Delete alert"
                 >
                   <Trash2 className="h-4 w-4" />

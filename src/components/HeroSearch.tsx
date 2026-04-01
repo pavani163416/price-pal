@@ -1,4 +1,4 @@
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, Zap } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -7,7 +7,7 @@ interface HeroSearchProps {
   isLoading: boolean;
 }
 
-const FloatingShape = ({
+const FloatingOrb = ({
   className,
   delay = 0,
 }: {
@@ -17,12 +17,13 @@ const FloatingShape = ({
   <motion.div
     className={`pointer-events-none absolute ${className}`}
     animate={{
-      y: [0, -25, 0],
-      rotate: [0, 8, -8, 0],
-      scale: [1, 1.08, 1],
+      y: [0, -30, 0],
+      x: [0, 10, -10, 0],
+      rotate: [0, 5, -5, 0],
+      scale: [1, 1.1, 0.95, 1],
     }}
     transition={{
-      duration: 7,
+      duration: 10,
       repeat: Infinity,
       ease: "easeInOut",
       delay,
@@ -39,66 +40,77 @@ const HeroSearch = ({ onSearch, isLoading }: HeroSearchProps) => {
   };
 
   return (
-    <section className="relative overflow-hidden bg-card py-24 md:py-32">
-      {/* Multi-layer background */}
-      <div className="animated-gradient pointer-events-none absolute inset-0" />
+    <section className="relative overflow-hidden bg-background py-28 md:py-36">
+      {/* Layered backgrounds */}
       <div className="pointer-events-none absolute inset-0 bg-mesh" />
-      <div className="pointer-events-none absolute inset-0 bg-grid opacity-30" />
+      <div className="pointer-events-none absolute inset-0 bg-grid opacity-20" />
+      <div className="pointer-events-none absolute inset-0 noise" />
 
-      {/* Large floating 3D orbs with motion */}
-      <FloatingShape
-        className="-left-32 -top-16 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-primary/10 to-primary/5 blur-3xl"
+      {/* Large neon orbs */}
+      <FloatingOrb
+        className="-left-40 -top-20 h-[32rem] w-[32rem] rounded-full bg-gradient-to-br from-primary/15 to-primary/5 blur-[100px]"
         delay={0}
       />
-      <FloatingShape
-        className="-right-24 bottom-0 h-96 w-96 rounded-full bg-gradient-to-tl from-secondary/12 to-secondary/4 blur-3xl"
-        delay={2}
+      <FloatingOrb
+        className="-right-32 bottom-0 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tl from-secondary/15 to-neon-purple/5 blur-[100px]"
+        delay={3}
       />
-      <FloatingShape
-        className="left-1/4 top-1/4 h-52 w-52 rounded-full bg-gradient-to-br from-accent/10 to-accent/5 blur-2xl"
-        delay={4}
-      />
-      <FloatingShape
-        className="right-1/4 top-1/3 h-36 w-36 rounded-full bg-gradient-to-br from-primary/8 to-secondary/8 blur-2xl"
-        delay={1.5}
+      <FloatingOrb
+        className="left-1/3 top-1/4 h-64 w-64 rounded-full bg-gradient-to-br from-neon-cyan/10 to-primary/5 blur-[80px]"
+        delay={5}
       />
 
       {/* 3D geometric shapes */}
-      <FloatingShape
-        className="left-[8%] top-[18%] h-16 w-16 rotate-45 rounded-xl border border-primary/15 bg-primary/5 backdrop-blur-sm"
-        delay={0.5}
-      />
-      <FloatingShape
-        className="right-[12%] top-[22%] h-12 w-12 rotate-12 rounded-lg border border-secondary/15 bg-secondary/5 backdrop-blur-sm"
-        delay={3}
-      />
-      <FloatingShape
-        className="bottom-[20%] left-[15%] h-10 w-10 -rotate-12 rounded-full border border-accent/20 bg-accent/5 backdrop-blur-sm"
+      <FloatingOrb
+        className="left-[6%] top-[15%] h-20 w-20 rotate-45 rounded-2xl border border-primary/20 bg-primary/5 backdrop-blur-sm shadow-[0_0_20px_hsl(var(--primary)/0.1)]"
         delay={1}
       />
-      <FloatingShape
-        className="bottom-[25%] right-[8%] h-14 w-14 rotate-[30deg] rounded-xl border border-primary/10 bg-primary/5 backdrop-blur-sm"
-        delay={2.5}
+      <FloatingOrb
+        className="right-[10%] top-[20%] h-14 w-14 rotate-12 rounded-xl border border-secondary/20 bg-secondary/5 backdrop-blur-sm shadow-[0_0_15px_hsl(var(--secondary)/0.1)]"
+        delay={4}
       />
+      <FloatingOrb
+        className="bottom-[15%] left-[12%] h-12 w-12 -rotate-12 rounded-full border border-neon-cyan/20 bg-neon-cyan/5 backdrop-blur-sm"
+        delay={2}
+      />
+      <FloatingOrb
+        className="bottom-[20%] right-[6%] h-16 w-16 rotate-[30deg] rounded-2xl border border-accent/15 bg-accent/5 backdrop-blur-sm shadow-[0_0_20px_hsl(var(--accent)/0.1)]"
+        delay={6}
+      />
+
+      {/* Horizontal neon lines */}
+      <div className="pointer-events-none absolute left-0 top-1/3 w-full neon-line opacity-40" />
+      <div className="pointer-events-none absolute left-0 bottom-1/4 w-full neon-line opacity-20" />
 
       <div className="container relative mx-auto px-4 text-center">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut" }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
         >
           <motion.div
-            className="mx-auto mb-5 flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 font-body text-xs font-semibold uppercase tracking-wider text-primary shadow-[0_0_20px_-4px_hsl(var(--primary)/0.2)]"
-            animate={{ boxShadow: ["0 0 20px -4px hsl(var(--primary) / 0.15)", "0 0 35px -4px hsl(var(--primary) / 0.25)", "0 0 20px -4px hsl(var(--primary) / 0.15)"] }}
+            className="mx-auto mb-6 flex w-fit items-center gap-2 rounded-full glow-border bg-primary/5 px-5 py-2 font-body text-xs font-semibold uppercase tracking-widest text-primary"
+            animate={{
+              boxShadow: [
+                "0 0 15px hsl(var(--primary) / 0.15), inset 0 0 15px hsl(var(--primary) / 0.05)",
+                "0 0 30px hsl(var(--primary) / 0.25), inset 0 0 20px hsl(var(--primary) / 0.08)",
+                "0 0 15px hsl(var(--primary) / 0.15), inset 0 0 15px hsl(var(--primary) / 0.05)",
+              ],
+            }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            <Sparkles className="h-3.5 w-3.5" />
+            <Zap className="h-3.5 w-3.5" />
             AI-Powered Price Comparison
           </motion.div>
-          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-5xl lg:text-6xl">
-            Find the <span className="text-gradient">Best Price</span> Instantly
+
+          <h1 className="font-display text-4xl font-extrabold tracking-tight text-foreground md:text-6xl lg:text-7xl">
+            Find the{" "}
+            <span className="text-gradient">Best Price</span>
+            <br className="hidden sm:block" />
+            {" "}Instantly
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl font-body text-lg leading-relaxed text-muted-foreground">
+
+          <p className="mx-auto mt-6 max-w-2xl font-body text-lg leading-relaxed text-muted-foreground">
             Paste a product link or search by name — we compare prices across
             Amazon, Flipkart, Croma & more in seconds.
           </p>
@@ -106,37 +118,48 @@ const HeroSearch = ({ onSearch, isLoading }: HeroSearchProps) => {
 
         <motion.form
           onSubmit={handleSubmit}
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          initial={{ opacity: 0, y: 30, scale: 0.96 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="group mx-auto mt-10 flex max-w-2xl overflow-hidden rounded-2xl border border-border bg-background/80 backdrop-blur-md shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.12),0_8px_24px_-8px_hsl(var(--foreground)/0.05)] transition-all duration-500 focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-[0_24px_70px_-15px_hsl(var(--primary)/0.25),0_0_40px_-10px_hsl(var(--primary)/0.1)] focus-within:border-primary/30"
+          transition={{ duration: 0.6, delay: 0.25 }}
+          className="group mx-auto mt-12 flex max-w-2xl overflow-hidden rounded-2xl glass-card shadow-[0_20px_60px_-15px_hsl(var(--primary)/0.15)] transition-all duration-500 focus-within:shadow-[0_0_50px_-10px_hsl(var(--primary)/0.3),0_20px_60px_-15px_hsl(var(--primary)/0.2)] focus-within:border-primary/40"
         >
           <div className="flex flex-1 items-center gap-3 px-5">
-            <Search className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-focus-within:text-primary" />
+            <Search className="h-5 w-5 shrink-0 text-muted-foreground transition-colors group-focus-within:text-primary group-focus-within:drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Paste product URL or type product name…"
-              className="w-full bg-transparent py-4 font-body text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="w-full bg-transparent py-4.5 font-body text-base text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
           <button
             type="submit"
             disabled={isLoading || !query.trim()}
-            className="m-2 rounded-xl bg-primary px-8 py-3 font-display text-sm font-semibold text-primary-foreground shadow-[0_6px_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:bg-primary/90 hover:shadow-[0_8px_28px_-4px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:hover:translate-y-0"
+            className="m-2 rounded-xl bg-primary px-8 py-3 font-display text-sm font-semibold text-primary-foreground shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_-4px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 disabled:opacity-40 disabled:hover:translate-y-0 btn-press"
           >
-            {isLoading ? "Searching…" : "Compare Prices"}
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  className="inline-block h-4 w-4 rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground"
+                />
+                Searching…
+              </span>
+            ) : (
+              "Compare Prices"
+            )}
           </button>
         </motion.form>
 
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
+          transition={{ delay: 0.5 }}
+          className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs text-muted-foreground"
         >
-          <span>Try:</span>
+          <span className="text-muted-foreground/60">Try:</span>
           {["iPhone 15 Pro Max", "Samsung Galaxy S24", "Sony WH-1000XM5"].map(
             (item) => (
               <button
@@ -145,7 +168,7 @@ const HeroSearch = ({ onSearch, isLoading }: HeroSearchProps) => {
                   setQuery(item);
                   onSearch(item);
                 }}
-                className="rounded-full border border-border bg-background/60 px-3 py-1 backdrop-blur-sm transition-all hover:border-primary/40 hover:text-foreground hover:bg-primary/5 hover:-translate-y-0.5 hover:shadow-[0_4px_12px_-4px_hsl(var(--primary)/0.2)]"
+                className="rounded-full border border-border/50 bg-muted/30 px-3.5 py-1.5 backdrop-blur-sm transition-all hover:border-primary/40 hover:text-primary hover:bg-primary/5 hover:-translate-y-0.5 hover:shadow-[0_0_15px_-5px_hsl(var(--primary)/0.3)] btn-press"
               >
                 {item}
               </button>
