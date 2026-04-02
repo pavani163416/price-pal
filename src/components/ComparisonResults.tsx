@@ -134,7 +134,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
       </motion.div>
 
       <div className="flex flex-col gap-3">
-        {sorted.map((product, i) => (
+        {allSorted.map((product, i) => (
           <ProductCard key={product.id} product={product} rank={i + 1} />
         ))}
       </div>
