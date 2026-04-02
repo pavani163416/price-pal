@@ -15,6 +15,7 @@ const ProductCard = ({ product, rank }: ProductCardProps) => {
   const formatPrice = (p: number) =>
     "₹" + p.toLocaleString("en-IN");
 
+  const isNotAvailable = product.availability === "Not Available" || product.price <= 0;
   const isOutOfStock =
     product.availability === "Out of Stock" || product.availability === "Unavailable";
 
