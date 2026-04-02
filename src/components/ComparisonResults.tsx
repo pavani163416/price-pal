@@ -115,7 +115,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
       >
         <div>
           <h2 className="font-display text-xl font-bold text-foreground">
-            Price Comparison ({products.length} stores)
+            Price Comparison ({availableProducts.length} of {products.length} stores)
           </h2>
         </div>
 
