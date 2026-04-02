@@ -242,10 +242,10 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
           schema: PRODUCT_SCHEMA,
         },
         onlyMainContent: true,
-        waitFor: 3000,
+        waitFor: 5000,
       },
       apiKey,
-      18000,
+      25000,
     );
 
     // v1 response: extract data is in data.data.extract or data.extract
