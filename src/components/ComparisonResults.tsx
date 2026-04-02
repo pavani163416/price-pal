@@ -14,18 +14,26 @@ type SortKey = "price-asc" | "price-desc" | "rating";
 const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
   const [sort, setSort] = useState<SortKey>("price-asc");
 
-  const sorted = [...products].sort((a, b) => {
+  const availableProducts = products.filter((p) => p.price > 0);
+  const unavailableProducts = products.filter((p) => p.price <= 0);
+
+  const sorted = [...availableProducts].sort((a, b) => {
     if (sort === "price-asc") return a.price - b.price;
     if (sort === "price-desc") return b.price - a.price;
     return b.rating - a.rating;
   });
 
-  const bestProduct = [...products].sort((a, b) => a.price - b.price)[0];
+  // Show available first, then unavailable
+  const allSorted = [...sorted, ...unavailableProducts];
+
+  const bestProduct = availableProducts.length > 0
+    ? [...availableProducts].sort((a, b) => a.price - b.price)[0]
+    : null;
 
   const savings =
-    products.length > 1
-      ? Math.max(...products.map((p) => p.price)) -
-        Math.min(...products.map((p) => p.price))
+    availableProducts.length > 1
+      ? Math.max(...availableProducts.map((p) => p.price)) -
+        Math.min(...availableProducts.map((p) => p.price))
       : 0;
 
   const formatPrice = (p: number) => "₹" + p.toLocaleString("en-IN");
@@ -107,7 +115,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
       >
         <div>
           <h2 className="font-display text-xl font-bold text-foreground">
-            Price Comparison ({products.length} stores)
+            Price Comparison ({availableProducts.length} of {products.length} stores)
           </h2>
         </div>
 
@@ -126,7 +134,7 @@ const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
       </motion.div>
 
       <div className="flex flex-col gap-3">
-        {sorted.map((product, i) => (
+        {allSorted.map((product, i) => (
           <ProductCard key={product.id} product={product} rank={i + 1} />
         ))}
       </div>
