@@ -14,18 +14,26 @@ type SortKey = "price-asc" | "price-desc" | "rating";
 const ComparisonResults = ({ products, query }: ComparisonResultsProps) => {
   const [sort, setSort] = useState<SortKey>("price-asc");
 
-  const sorted = [...products].sort((a, b) => {
+  const availableProducts = products.filter((p) => p.price > 0);
+  const unavailableProducts = products.filter((p) => p.price <= 0);
+
+  const sorted = [...availableProducts].sort((a, b) => {
     if (sort === "price-asc") return a.price - b.price;
     if (sort === "price-desc") return b.price - a.price;
     return b.rating - a.rating;
   });
 
-  const bestProduct = [...products].sort((a, b) => a.price - b.price)[0];
+  // Show available first, then unavailable
+  const allSorted = [...sorted, ...unavailableProducts];
+
+  const bestProduct = availableProducts.length > 0
+    ? [...availableProducts].sort((a, b) => a.price - b.price)[0]
+    : null;
 
   const savings =
-    products.length > 1
-      ? Math.max(...products.map((p) => p.price)) -
-        Math.min(...products.map((p) => p.price))
+    availableProducts.length > 1
+      ? Math.max(...availableProducts.map((p) => p.price)) -
+        Math.min(...availableProducts.map((p) => p.price))
       : 0;
 
   const formatPrice = (p: number) => "₹" + p.toLocaleString("en-IN");
