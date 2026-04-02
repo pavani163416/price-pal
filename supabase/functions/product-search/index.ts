@@ -5,6 +5,10 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v1';
 
+// In-memory cache (persists across warm invocations)
+const cache = new Map<string, { products: Product[]; ts: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 const PRODUCT_SCHEMA = {
   type: 'object',
   properties: {
@@ -171,7 +175,7 @@ function isLikelyProductUrl(store: StoreConfig, url: string): boolean {
   }
 }
 
-async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string, timeoutMs = 20000): Promise<T> {
+async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string, timeoutMs = 12000): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -225,10 +229,10 @@ async function scrapeProductPage(url: string, store: StoreConfig, apiKey: string
           schema: PRODUCT_SCHEMA,
         },
         onlyMainContent: true,
-        waitFor: 5000,
+        waitFor: 3000,
       },
       apiKey,
-      30000,
+      18000,
     );
 
     // v1 response: extract data is in data.data.extract or data.extract
@@ -277,7 +281,7 @@ async function searchStoreProducts(store: StoreConfig, referenceName: string, ap
         limit: 5,
       },
       apiKey,
-      15000,
+      10000,
     );
 
     // v1 response: results are in data.data array
@@ -386,6 +390,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check cache first
+    const cacheKey = query.trim().toLowerCase();
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+      console.log('Cache hit for:', cacheKey);
+      return new Response(
+        JSON.stringify({ products: cached.products }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
       return new Response(
@@ -403,6 +418,16 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Found ${allProducts.length} products total`);
+
+    // Store in cache
+    if (allProducts.length > 0) {
+      cache.set(cacheKey, { products: allProducts, ts: Date.now() });
+      // Evict old entries if cache grows too large
+      if (cache.size > 100) {
+        const oldest = [...cache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+        if (oldest) cache.delete(oldest[0]);
+      }
+    }
 
     return new Response(
       JSON.stringify({ products: allProducts }),
