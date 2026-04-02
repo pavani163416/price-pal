@@ -188,7 +188,7 @@ function isLikelyProductUrl(store: StoreConfig, url: string): boolean {
   }
 }
 
-async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string, timeoutMs = 12000): Promise<T> {
+async function firecrawlRequest<T>(path: string, payload: Record<string, unknown>, apiKey: string, timeoutMs = 15000): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
