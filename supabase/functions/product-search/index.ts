@@ -419,6 +419,16 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${allProducts.length} products total`);
 
+    // Store in cache
+    if (allProducts.length > 0) {
+      cache.set(cacheKey, { products: allProducts, ts: Date.now() });
+      // Evict old entries if cache grows too large
+      if (cache.size > 100) {
+        const oldest = [...cache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+        if (oldest) cache.delete(oldest[0]);
+      }
+    }
+
     return new Response(
       JSON.stringify({ products: allProducts }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
