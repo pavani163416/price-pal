@@ -281,7 +281,7 @@ async function searchStoreProducts(store: StoreConfig, referenceName: string, ap
         limit: 5,
       },
       apiKey,
-      15000,
+      10000,
     );
 
     // v1 response: results are in data.data array
