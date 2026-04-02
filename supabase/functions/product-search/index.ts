@@ -5,6 +5,10 @@ const corsHeaders = {
 
 const FIRECRAWL_BASE_URL = 'https://api.firecrawl.dev/v1';
 
+// In-memory cache (persists across warm invocations)
+const cache = new Map<string, { products: Product[]; ts: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 const PRODUCT_SCHEMA = {
   type: 'object',
   properties: {
