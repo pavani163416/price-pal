@@ -343,6 +343,23 @@ async function resolveProductForStore(
   return await searchStoreProducts(store, referenceName, apiKey);
 }
 
+// Lightweight fallback: scrape just the page title via markdown format (faster than extract)
+async function scrapePageTitle(url: string, apiKey: string): Promise<string> {
+  try {
+    const data = await firecrawlRequest<any>(
+      'scrape',
+      { url, formats: ['markdown'], onlyMainContent: false, waitFor: 3000 },
+      apiKey,
+      12000,
+    );
+    const title = data?.data?.metadata?.title || data?.data?.metadata?.ogTitle || '';
+    return cleanProductName(title);
+  } catch (e) {
+    console.error('Title scrape fallback failed:', e);
+    return '';
+  }
+}
+
 async function buildComparisonProducts(query: string, apiKey: string): Promise<Product[]> {
   const normalizedQuery = normalizeInputQuery(query);
   const queryIsUrl = isLikelyUrl(normalizedQuery);
@@ -352,7 +369,7 @@ async function buildComparisonProducts(query: string, apiKey: string): Promise<P
   let referenceName = queryIsUrl ? deriveQueryFromUrl(canonicalQuery) : normalizedQuery;
   let sourceProduct: Product | null = null;
 
-  // If it's a product URL from a supported store, scrape it first to get the real product name
+  // If it's a product URL from a supported store, scrape it to get the real product name
   if (queryIsUrl && sourceStore && isLikelyProductUrl(sourceStore, canonicalQuery)) {
     console.log('Detected supported product URL, scraping source product...');
     const sourceScrape = await scrapeProductPage(canonicalQuery, sourceStore, apiKey);
@@ -360,6 +377,23 @@ async function buildComparisonProducts(query: string, apiKey: string): Promise<P
     if (sourceScrape.rawName) {
       referenceName = sourceScrape.rawName;
     }
+  }
+
+  // If we still don't have a good reference name, try a lightweight title scrape
+  if (queryIsUrl && (!referenceName || referenceName.startsWith('http'))) {
+    console.log('Reference name missing or is URL, trying title fallback...');
+    const titleFallback = await scrapePageTitle(canonicalQuery, apiKey);
+    if (titleFallback && titleFallback.length > 3) {
+      referenceName = titleFallback;
+      console.log('Got title fallback:', referenceName);
+    }
+  }
+
+  // Final safety: if referenceName is still a URL or empty, we can't search
+  if (!referenceName || referenceName.startsWith('http')) {
+    console.error('Could not extract product name from URL');
+    // Return just the source product if we have it
+    return sourceProduct ? [sourceProduct] : [];
   }
 
   console.log('Searching across stores for:', referenceName);
@@ -383,6 +417,26 @@ async function buildComparisonProducts(query: string, apiKey: string): Promise<P
 
   if (sourceProduct && !deduped.has(sourceProduct.store)) {
     deduped.set(sourceProduct.store, sourceProduct);
+  }
+
+  // For stores that returned no results, add a "Not Available" entry
+  for (const store of STORE_CONFIGS) {
+    if (!deduped.has(store.store)) {
+      deduped.set(store.store, {
+        id: `${store.key}_not_available`,
+        name: referenceName,
+        price: 0,
+        store: store.store,
+        store_logo: store.store_logo,
+        rating: 0,
+        reviews: 0,
+        url: `https://www.${store.domain}`,
+        image: '',
+        availability: 'Not Available',
+        brand: referenceName.split(' ')[0] || '',
+        is_best_price: false,
+      });
+    }
   }
 
   return Array.from(deduped.values());
