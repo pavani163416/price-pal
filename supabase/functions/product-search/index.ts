@@ -100,6 +100,19 @@ function deriveQueryFromUrl(url: string): string {
       .filter(Boolean)
       .map((part) => decodeURIComponent(part));
 
+    // For Amazon URLs like /Product-Name-Keywords/dp/ASIN, the first slug often has the product name
+    const hostname = parsed.hostname.replace(/^www\./, '');
+    if (hostname.endsWith('amazon.in') || hostname.endsWith('amazon.com')) {
+      const dpIndex = parts.findIndex((p) => p.toLowerCase() === 'dp');
+      if (dpIndex > 0) {
+        // The part before /dp/ is usually the product slug
+        const slug = parts[dpIndex - 1];
+        if (slug && slug.length > 3 && !/^[a-z0-9]{8,20}$/i.test(slug)) {
+          return slug.replace(/[-_]+/g, ' ').trim();
+        }
+      }
+    }
+
     const candidate = parts.find((part) => {
       const normalized = part.toLowerCase();
       return (
@@ -109,9 +122,9 @@ function deriveQueryFromUrl(url: string): string {
       );
     });
 
-    return candidate ? candidate.replace(/[-_]+/g, ' ').trim() : url;
+    return candidate ? candidate.replace(/[-_]+/g, ' ').trim() : '';
   } catch {
-    return url;
+    return '';
   }
 }
 
