@@ -11,6 +11,7 @@ import SignUp from "./pages/SignUp.tsx";
 import Profile from "./pages/Profile.tsx";
 import Compare from "./pages/Compare.tsx";
 import PriceAlerts from "./pages/PriceAlerts.tsx";
+import ChatBot from "./components/ChatBot.tsx";
 
 const queryClient = new QueryClient();
 
