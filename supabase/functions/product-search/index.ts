@@ -390,6 +390,17 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Check cache first
+    const cacheKey = query.trim().toLowerCase();
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < CACHE_TTL_MS) {
+      console.log('Cache hit for:', cacheKey);
+      return new Response(
+        JSON.stringify({ products: cached.products }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const apiKey = Deno.env.get('FIRECRAWL_API_KEY');
     if (!apiKey) {
       return new Response(
