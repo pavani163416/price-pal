@@ -105,28 +105,36 @@ const ProductCard = ({ product, rank }: ProductCardProps) => {
 
         {/* Price & CTA */}
         <div className="flex shrink-0 flex-col items-end gap-2">
-          <span className="font-display text-xl font-bold text-foreground">
-            {formatPrice(product.price)}
-          </span>
-          {product.original_price && (
-            <div className="flex items-center gap-2 text-xs">
-              <span className="text-muted-foreground line-through">
-                {formatPrice(product.original_price)}
+          {isNotAvailable ? (
+            <span className="font-display text-lg font-bold text-muted-foreground">
+              Not Available
+            </span>
+          ) : (
+            <>
+              <span className="font-display text-xl font-bold text-foreground">
+                {formatPrice(product.price)}
               </span>
-              <span className="font-semibold text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]">
-                {discount}% off
-              </span>
-            </div>
+              {product.original_price && (
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-muted-foreground line-through">
+                    {formatPrice(product.original_price)}
+                  </span>
+                  <span className="font-semibold text-primary drop-shadow-[0_0_4px_hsl(var(--primary)/0.3)]">
+                    {discount}% off
+                  </span>
+                </div>
+              )}
+              <a
+                href={product.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1 flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_-4px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 btn-press"
+              >
+                View Deal
+                <ExternalLink className="h-4 w-4" />
+              </a>
+            </>
           )}
-          <a
-            href={product.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-1 flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-[0_0_20px_-4px_hsl(var(--primary)/0.5)] transition-all hover:shadow-[0_0_30px_-4px_hsl(var(--primary)/0.7)] hover:-translate-y-0.5 btn-press"
-          >
-            View Deal
-            <ExternalLink className="h-4 w-4" />
-          </a>
         </div>
       </div>
     </motion.div>
