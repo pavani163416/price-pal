@@ -38,9 +38,9 @@ const PriceAlertNotifier = () => {
       }
     };
 
-    // Check immediately and then every 60 seconds
+    // Check immediately and then every 10 seconds
     checkAlerts();
-    const interval = setInterval(checkAlerts, 60000);
+    const interval = setInterval(checkAlerts, 10000);
     return () => clearInterval(interval);
   }, [user, toast]);
 
