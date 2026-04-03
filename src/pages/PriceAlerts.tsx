@@ -70,10 +70,12 @@ const PriceAlerts = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Alert created!", description: "You'll be notified when the price drops." });
+      toast({ title: "✅ Alert created!", description: "You'll be notified when the price drops." });
       setForm({ product_name: "", product_url: "", store: "Amazon", current_price: "", target_price: "" });
       setShowForm(false);
       fetchAlerts();
+      // Dispatch event so PriceAlertNotifier re-checks immediately
+      window.dispatchEvent(new Event("price-alert-created"));
     }
   };
 
