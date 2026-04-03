@@ -2,73 +2,41 @@ import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, X, Send, Bot, User, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 type Message = { role: "user" | "assistant"; content: string };
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-support`;
 
-async function streamChat({
+async function sendChat({
   messages,
-  onDelta,
-  onDone,
-  onError,
+  sessionToken,
 }: {
   messages: Message[];
-  onDelta: (text: string) => void;
-  onDone: () => void;
-  onError: (msg: string) => void;
-}) {
+  sessionToken: string | null;
+}): Promise<{ reply: string; tool_results?: any[] }> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+  };
+  // Pass user's auth token so the edge function can identify the user
+  if (sessionToken) {
+    headers["Authorization"] = `Bearer ${sessionToken}`;
+  }
+
   const resp = await fetch(CHAT_URL, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
+    headers,
     body: JSON.stringify({ messages }),
   });
 
   if (!resp.ok) {
     const err = await resp.json().catch(() => ({ error: "Request failed" }));
-    onError(err.error || "Something went wrong");
-    return;
+    throw new Error(err.error || "Something went wrong");
   }
 
-  if (!resp.body) {
-    onError("No response body");
-    return;
-  }
-
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-
-    let idx: number;
-    while ((idx = buffer.indexOf("\n")) !== -1) {
-      let line = buffer.slice(0, idx);
-      buffer = buffer.slice(idx + 1);
-      if (line.endsWith("\r")) line = line.slice(0, -1);
-      if (!line.startsWith("data: ")) continue;
-      const json = line.slice(6).trim();
-      if (json === "[DONE]") {
-        onDone();
-        return;
-      }
-      try {
-        const parsed = JSON.parse(json);
-        const content = parsed.choices?.[0]?.delta?.content;
-        if (content) onDelta(content);
-      } catch {
-        buffer = line + "\n" + buffer;
-        break;
-      }
-    }
-  }
-  onDone();
+  return resp.json();
 }
 
 const ChatBot = () => {
@@ -77,6 +45,20 @@ const ChatBot = () => {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { user, session } = useAuth();
+  const { toast } = useToast();
+  const prevUserIdRef = useRef<string | null>(null);
+
+  // Reset chat when user changes (new sign-in or sign-out)
+  useEffect(() => {
+    const currentUserId = user?.id ?? null;
+    if (prevUserIdRef.current !== currentUserId) {
+      if (prevUserIdRef.current !== null || currentUserId !== null) {
+        setMessages([]);
+      }
+      prevUserIdRef.current = currentUserId;
+    }
+  }, [user]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -94,32 +76,32 @@ const ChatBot = () => {
     setInput("");
     setIsLoading(true);
 
-    let assistantContent = "";
-    const upsert = (chunk: string) => {
-      assistantContent += chunk;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return prev.map((m, i) =>
-            i === prev.length - 1 ? { ...m, content: assistantContent } : m
-          );
-        }
-        return [...prev, { role: "assistant", content: assistantContent }];
+    try {
+      const result = await sendChat({
+        messages: newMessages,
+        sessionToken: session?.access_token ?? null,
       });
-    };
 
-    await streamChat({
-      messages: newMessages,
-      onDelta: upsert,
-      onDone: () => setIsLoading(false),
-      onError: (msg) => {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: `Sorry, something went wrong: ${msg}` },
-        ]);
-        setIsLoading(false);
-      },
-    });
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: result.reply },
+      ]);
+
+      // Show toast if a price alert was created
+      if (result.tool_results?.some((r: any) => r.success)) {
+        toast({
+          title: "🔔 Price Alert Set!",
+          description: "Check your Price Alerts page to view it.",
+        });
+      }
+    } catch (err: any) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `Sorry, something went wrong: ${err.message}` },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -214,7 +196,7 @@ const ChatBot = () => {
                   )}
                 </motion.div>
               ))}
-              {isLoading && messages[messages.length - 1]?.role === "user" && (
+              {isLoading && (
                 <div className="flex gap-2">
                   <div className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--neon-cyan)/0.15)]">
                     <Bot className="h-3.5 w-3.5 text-[hsl(var(--neon-cyan))]" />
