@@ -165,7 +165,7 @@ const Navbar = () => {
               <div className="my-2 neon-line" />
               {user ? (
                 <>
-                  <Link to="#about" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-foreground transition-all hover:bg-primary/10 hover:text-primary">
+                  <Link to="/about" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-foreground transition-all hover:bg-primary/10 hover:text-primary">
                     <Info className="h-4 w-4 text-muted-foreground" />
                     About
                   </Link>
