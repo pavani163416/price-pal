@@ -99,7 +99,7 @@ const Navbar = () => {
               {dropdownOpen && (
                 <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl glass-card shadow-[0_20px_50px_-10px_hsl(var(--background)/0.8)] animate-in fade-in-0 zoom-in-95 slide-in-from-top-2">
                   <Link
-                    to="#about"
+                    to="/about"
                     onClick={() => setDropdownOpen(false)}
                     className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-foreground transition-all hover:bg-primary/10 hover:text-primary"
                   >
@@ -165,7 +165,7 @@ const Navbar = () => {
               <div className="my-2 neon-line" />
               {user ? (
                 <>
-                  <Link to="#about" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-foreground transition-all hover:bg-primary/10 hover:text-primary">
+                  <Link to="/about" onClick={() => setMobileOpen(false)} className="flex items-center gap-3 rounded-lg px-4 py-3 font-body text-sm text-foreground transition-all hover:bg-primary/10 hover:text-primary">
                     <Info className="h-4 w-4 text-muted-foreground" />
                     About
                   </Link>

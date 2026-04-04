@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound.tsx";
 import SignIn from "./pages/SignIn.tsx";
 import SignUp from "./pages/SignUp.tsx";
 import Profile from "./pages/Profile.tsx";
+import About from "./pages/About.tsx";
 import Compare from "./pages/Compare.tsx";
 import PriceAlerts from "./pages/PriceAlerts.tsx";
 import ChatBot from "./components/ChatBot.tsx";
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/about" element={<About />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
